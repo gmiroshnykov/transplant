@@ -8,13 +8,14 @@ Requirements
 ------------
 
 * Node.js 0.10+
-* properly configured SSH access to source and destination repositories
+* Mercurial
+* Properly configured SSH access to source and destination repositories
 
 
 Installation
 ------------
 
-1. Run `npm install`
+1. Run `npm install`.
 2. Copy `config.example.js` to `config.js` and customize it as required.
 
 
