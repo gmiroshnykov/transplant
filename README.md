@@ -1,13 +1,13 @@
-Transplant
+transplant
 ==========
 
-A tool to transplant commits from one Mercurial repository to another.
+A tool for transplanting commits between Mercurial repositories.
 
 
 Requirements
 ------------
 
-* Node.js 0.10+
+* Python 2.7 + pip
 * Mercurial
 * Properly configured SSH access to source and destination repositories
 
@@ -15,26 +15,11 @@ Requirements
 Installation
 ------------
 
-1. Run `npm install`.
-2. Copy `config.example.js` to `config.js` and customize it as required.
+1. Run `pip install -r requirements.txt`
+2. Run `python transplant.py`
 
 
-Usage
------
+Testing
+-------
 
-Start the server:
-
-    npm start
-
-Next, in another terminal:
-
-    curl -i http://localhost:5000/transplant \
-        -d src=transplant-src \
-        -d dst=transplant-dst \
-        -d rev=bd37dee7f3fb
-
-
-Known issues
-------------
-
-* No error handling
+Run `python transplant_test.py`
