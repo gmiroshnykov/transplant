@@ -1,1 +1,2 @@
 *.pyc
+/docker/id_rsa
