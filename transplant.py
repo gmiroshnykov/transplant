@@ -1,4 +1,5 @@
 import os
+import fnmatch
 from flask import Flask, request, redirect, jsonify
 from hgapi.hgapi import Repo, HgException
 
@@ -54,12 +55,26 @@ def do_transplant(src, dst, rev):
     src_url = get_repo_url(src)
     try:
         dst_repo.hg_command('transplant', '--source', src_url, rev)
+    except HgException, e:
+        return jsonify({
+            'error': 'Transplant failed',
+            'details': str(e)
+        }), 409
     finally:
-        dst_repo.hg_update('.', clean=True)
+        cleanup(dst_repo)
 
     safe_push(dst_repo)
     tip = dst_repo.hg_id()
     return jsonify({'tip': tip})
+
+def cleanup(repo):
+    repo.hg_update('.', clean=True)
+
+    # remove all .rej files
+    for root, dirnames, filenames in os.walk(repo.path):
+        for filename in fnmatch.filter(filenames, '*.rej'):
+            pathname = os.path.join(root, filename)
+            os.remove(pathname)
 
 @app.route('/')
 def index():
