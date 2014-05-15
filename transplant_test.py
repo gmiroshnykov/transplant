@@ -86,13 +86,11 @@ class TransplantTestCase(unittest.TestCase):
         assert content == "Goodbye World!\n"
 
     def test_error_conflict(self):
-        content = "Hello World!\n" \
-            "Goodbye World!\n"
-        self._set_test_file_content(self.src_dir, content)
-        self.src.hg_commit("Goodbye World!")
+        content = "Goodbye World!\n"
+        self._set_test_file_content(self.dst_dir, content)
+        self.dst.hg_commit("Goodbye World!")
 
-        content = "Hello World!\n" \
-            "Hello again!\n"
+        content = "Hello again!\n"
         self._set_test_file_content(self.src_dir, content)
         self.src.hg_commit("Hello again!")
 

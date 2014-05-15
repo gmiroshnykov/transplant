@@ -30,12 +30,31 @@ def clone_or_pull(name):
     repo_dir = get_repo_dir(name)
     repo = Repo(repo_dir)
     if not os.path.exists(repo_dir):
+        app.logger.info('cloning repository "%s"', name)
         Repo.hg_clone(repo_url, repo_dir)
     else:
+        app.logger.info('pulling repository "%s"', name)
         repo.hg_pull()
+        app.logger.info('updating repository "%s"', name)
         repo.hg_update('.')
 
     return repo
+
+def safe_transplant(dst_repo, src_url, rev):
+    try:
+        result = dst_repo.hg_command('transplant', '--source', src_url, rev)
+        app.logger.debug('hg transplant: %s', result)
+    finally:
+        cleanup(dst_repo)
+
+def cleanup(repo):
+    repo.hg_update('.', clean=True)
+
+    # remove all .rej files
+    for root, dirnames, filenames in os.walk(repo.path):
+        for filename in fnmatch.filter(filenames, '*.rej'):
+            pathname = os.path.join(root, filename)
+            os.remove(pathname)
 
 def safe_push(repo, *args):
     result = None
@@ -51,30 +70,26 @@ def mkdirp(directory):
         os.makedirs(directory)
 
 def do_transplant(src, dst, rev):
-    dst_repo = clone_or_pull(dst)
-    src_url = get_repo_url(src)
     try:
-        dst_repo.hg_command('transplant', '--source', src_url, rev)
+        dst_repo = clone_or_pull(dst)
+        src_url = get_repo_url(src)
+
+        app.logger.info('transplanting revision "%s" from "%s" to "%s"', rev, src, dst)
+        safe_transplant(dst_repo, src_url, rev)
+
+        app.logger.info('pushing "%s"', dst)
+        safe_push(dst_repo)
+
+        tip = dst_repo.hg_id()
+        app.logger.info('tip: %s', tip)
+        return jsonify({'tip': tip})
+
     except HgException, e:
         return jsonify({
             'error': 'Transplant failed',
             'details': str(e)
         }), 409
-    finally:
-        cleanup(dst_repo)
 
-    safe_push(dst_repo)
-    tip = dst_repo.hg_id()
-    return jsonify({'tip': tip})
-
-def cleanup(repo):
-    repo.hg_update('.', clean=True)
-
-    # remove all .rej files
-    for root, dirnames, filenames in os.walk(repo.path):
-        for filename in fnmatch.filter(filenames, '*.rej'):
-            pathname = os.path.join(root, filename)
-            os.remove(pathname)
 
 @app.route('/')
 def index():
