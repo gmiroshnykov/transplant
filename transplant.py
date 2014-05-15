@@ -40,21 +40,17 @@ def clone_or_pull(name):
 
     return repo
 
-def safe_transplant(dst_repo, src_url, rev):
-    try:
-        result = dst_repo.hg_command('transplant', '--source', src_url, rev)
-        app.logger.debug('hg transplant: %s', result)
-    finally:
-        cleanup(dst_repo)
-
 def cleanup(repo):
     repo.hg_update('.', clean=True)
 
-    # remove all .rej files
-    for root, dirnames, filenames in os.walk(repo.path):
-        for filename in fnmatch.filter(filenames, '*.rej'):
-            pathname = os.path.join(root, filename)
-            os.remove(pathname)
+    repo.hg_command('--config', 'extensions.purge=',
+        'purge', '--abort-on-err', '--all')
+
+    try:
+        repo.hg_command('strip', '--no-backup', 'outgoing()')
+    except HgException, e:
+        if 'empty revision set' not in str(e):
+            raise e
 
 def safe_push(repo, *args):
     result = None
@@ -74,15 +70,21 @@ def do_transplant(src, dst, rev):
         dst_repo = clone_or_pull(dst)
         src_url = get_repo_url(src)
 
-        app.logger.info('transplanting revision "%s" from "%s" to "%s"', rev, src, dst)
-        safe_transplant(dst_repo, src_url, rev)
+        try:
+            app.logger.info('transplanting revision "%s" from "%s" to "%s"', rev, src, dst)
+            result = dst_repo.hg_command('--config', 'extensions.transplant=',
+                'transplant', '--source', src_url, rev)
+            app.logger.debug('hg transplant: %s', result)
 
-        app.logger.info('pushing "%s"', dst)
-        safe_push(dst_repo)
+            app.logger.info('pushing "%s"', dst)
+            safe_push(dst_repo)
 
-        tip = dst_repo.hg_id()
-        app.logger.info('tip: %s', tip)
-        return jsonify({'tip': tip})
+            tip = dst_repo.hg_id()
+            app.logger.info('tip: %s', tip)
+            return jsonify({'tip': tip})
+
+        finally:
+            cleanup(dst_repo)
 
     except HgException, e:
         return jsonify({
