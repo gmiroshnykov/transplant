@@ -38,9 +38,9 @@ class TransplantTestCase(unittest.TestCase):
             'test-dst': self.dst_dir,
         }
 
-        transplant.app.config['RULES'] = [
-            ['test-src', 'test-dst']
-        ]
+        transplant.app.config['RULES'] = {
+            'test-src': ['test-dst']
+        }
 
         transplant.app.config['WORKDIR'] = self.workdir
 

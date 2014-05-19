@@ -1,6 +1,6 @@
 import os
 import fnmatch
-from flask import Flask, request, redirect, jsonify
+from flask import Flask, request, redirect, jsonify, render_template
 from hgapi.hgapi import Repo, HgException
 
 app = Flask(__name__)
@@ -8,10 +8,13 @@ app.config.from_object('config')
 app.config.from_envvar('TRANSPLANT_SETTINGS', silent = True)
 
 def is_allowed_transplant(src, dst):
-    for rule in app.config['RULES']:
-        if rule == [src, dst]:
-            return True
-    return False
+    if src not in app.config['RULES']:
+        return False
+
+    if dst not in app.config['RULES'][src]:
+        return False
+
+    return True
 
 def has_repo(repo):
     return repo in app.config['REPOSITORIES']
@@ -95,7 +98,8 @@ def do_transplant(src, dst, rev):
 
 @app.route('/')
 def index():
-    return redirect('https://github.com/laggyluke/transplant')
+    rules = app.config['RULES']
+    return render_template('index.html', rules=rules)
 
 @app.route('/transplant', methods = ['POST'])
 def transplant():
