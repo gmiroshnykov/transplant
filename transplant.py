@@ -5,7 +5,6 @@ from hgapi.hgapi import Repo, HgException
 
 app = Flask(__name__)
 app.config.from_object('config')
-app.config.from_envvar('TRANSPLANT_SETTINGS', silent = True)
 
 def is_allowed_transplant(src, dst):
     if src not in app.config['RULES']:
@@ -135,4 +134,5 @@ def transplant():
     return do_transplant(src, dst, rev)
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
