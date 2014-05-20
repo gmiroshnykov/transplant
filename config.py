@@ -1,4 +1,4 @@
-DEBUG = True
+import os
 
 REPOSITORIES = {
     'transplant-src': 'ssh://hg@bitbucket.org/laggyluke/transplant-src',
@@ -9,4 +9,5 @@ RULES = {
     'transplant-src': ['transplant-dst']
 }
 
-WORKDIR = '/tmp/transplant'
+DEBUG = bool(os.environ.get('TRANSPLANT_DEBUG', '1'))
+WORKDIR = os.environ.get('TRANSPLANT_WORKDIR', '/tmp/transplant')
