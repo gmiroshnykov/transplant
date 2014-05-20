@@ -45,6 +45,27 @@ Run `python transplant_test.py`
 Docker
 ------
 
-1. Build the image: `docker/build.sh`
-2. Run the image: `docker/run.sh`
-3. The app is available on `localhost:49000` via port forwarding.
+1. Build the image:
+    ```
+    docker build -t laggyluke/transplant .
+    ```
+
+2. Create a named container with persistent volumes:
+    ```
+    docker run -v /var/lib/transplant --name transplant-volumes busybox /bin/true
+    ```
+
+3. Put the RSA private key into `TRANSPLANT_ID_RSA` env var, e.g.:
+    ```
+    TRANSPLANT_ID_RSA=$(cat ~/.ssh/id_rsa)
+    ```
+
+4. Run the image using volumes from step 2 and RSA key from step 3:
+    ```
+    docker run -i -t -p 5000:5000 --rm \
+        --volumes-from=transplant-volumes \
+        --env TRANSPLANT_ID_RSA="$TRANSPLANT_ID_RSA" \
+        laggyluke/transplant
+    ```
+
+5. The app is available on [http://localhost:5000/](http://localhost:5000/).
