@@ -49,7 +49,8 @@ def cleanup(repo):
         'purge', '--abort-on-err', '--all')
 
     try:
-        repo.hg_command('strip', '--no-backup', 'outgoing()')
+        repo.hg_command('--config', 'extensions.mq=',
+            'strip', '--no-backup', 'outgoing()')
     except HgException, e:
         if 'empty revision set' not in str(e):
             raise e
