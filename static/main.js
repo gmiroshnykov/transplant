@@ -37,6 +37,11 @@ function transplant(e) {
     showSuccess(msg);
   }).fail(function(xhr, status, error) {
     var msg = xhr.responseText;
+    var json = xhr.responseJSON;
+    if (json.error) {
+      msg = 'Error: ' + json.error + "<br />\n" +
+        "Details:<br />\n<pre>" + json.details + "\n</pre>";
+    }
     showError(msg);
   }).always(function() {
     $('#transplant').button('reset');
@@ -44,11 +49,11 @@ function transplant(e) {
 }
 
 function showSuccess(msg) {
-  $('#msgSuccess').text(msg).show();
-  $('#msgError').text('').hide();
+  $('#msgSuccess').html(msg).show();
+  $('#msgError').html('').hide();
 }
 
 function showError(msg) {
-  $('#msgError').text(msg).show();
-  $('#msgSuccess').text('').hide();
+  $('#msgError').html(msg).show();
+  $('#msgSuccess').html('').hide();
 }
