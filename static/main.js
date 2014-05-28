@@ -39,8 +39,10 @@ function transplant(e) {
     var msg = xhr.responseText;
     var json = xhr.responseJSON;
     if (json.error) {
-      msg = 'Error: ' + json.error + "<br />\n" +
-        "Details:<br />\n<pre>" + json.details + "\n</pre>";
+      msg = 'Error: ' + json.error + "<br />\n";
+      if (json.details) {
+        msg += "Details:<br />\n<pre>" + json.details + "\n</pre>";
+      }
     }
     showError(msg);
   }).always(function() {
