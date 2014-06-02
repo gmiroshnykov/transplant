@@ -64,7 +64,7 @@ class TransplantTestCase(unittest.TestCase):
         with open(test_file, 'r') as f:
             return f.read()
 
-    def te1st_happy_path(self):
+    def test_happy_path(self):
         self._set_test_file_content(self.src_dir, "Goodbye World!\n")
         self.src.hg_commit("Goodbye World!")
         commit = self.src.hg_id()
@@ -110,7 +110,7 @@ class TransplantTestCase(unittest.TestCase):
         assert self.dst['tip'].desc == "Goodbye World! a=me"
 
 
-    def tes1t_error_conflict(self):
+    def test_error_conflict(self):
         content = "Goodbye World!\n"
         self._set_test_file_content(self.dst_dir, content)
         self.dst.hg_commit("Goodbye World!")

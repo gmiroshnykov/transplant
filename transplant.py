@@ -3,6 +3,8 @@ import fnmatch
 from flask import Flask, request, redirect, jsonify, render_template
 from hgapi.hgapi import Repo, HgException
 
+TRANSPLANT_FILTER = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'transplant_filter.py')
+
 app = Flask(__name__)
 app.config.from_object('config')
 
@@ -85,13 +87,19 @@ def do_transplant(src, dst, commit, message=None):
         src_url = get_repo_url(src)
 
         try:
-            app.logger.info('transplanting revision "%s" from "%s" to "%s"', commit, src, dst)
-            result = dst_repo.hg_command('--config', 'extensions.transplant=',
-                'transplant', '--source', src_url, commit)
-            app.logger.debug('hg transplant: %s', result)
+            cmd = ['--config', 'extensions.transplant=',
+                'transplant','--source', src_url]
 
             if message is not None:
-                amend(dst_repo, message)
+                dst_repo._env['TRANSPLANT_MESSAGE'] = message
+                cmd.extend(['--filter', TRANSPLANT_FILTER])
+
+            cmd.append(commit)
+
+            app.logger.info('transplanting revision "%s" from "%s" to "%s"', commit, src, dst)
+            app.logger.debug('command: %s', cmd)
+            result = dst_repo.hg_command(*cmd)
+            app.logger.debug('hg transplant: %s', result)
 
             app.logger.info('pushing "%s"', dst)
             safe_push(dst_repo)
@@ -101,6 +109,9 @@ def do_transplant(src, dst, commit, message=None):
             return jsonify({'tip': tip})
 
         finally:
+            if 'TRANSPLANT_MESSAGE' in dst_repo._env:
+                del dst_repo._env['TRANSPLANT_MESSAGE']
+
             cleanup(dst_repo)
 
     except HgException, e:
