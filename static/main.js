@@ -23,12 +23,18 @@ function transplant(e) {
 
   var src = $('#source').val();
   var dst = $('#destination').val();
-  var rev = $('#revision').val();
+  var commit = $('#commit').val();
+  var message = $('#message').val();
+
   var payload = {
     src: src,
     dst: dst,
-    rev: rev
+    commit: commit
   };
+
+  if (message.length > 0) {
+    payload.message = message;
+  }
 
   $('#transplant').button('loading');
 
@@ -38,13 +44,15 @@ function transplant(e) {
   }).fail(function(xhr, status, error) {
     var msg = xhr.responseText;
     var json = xhr.responseJSON;
-    if (json.error) {
+    if (json && json.error) {
       msg = 'Error: ' + json.error + "<br />\n";
       if (json.details) {
-        msg += "Details:<br />\n<pre>" + json.details + "\n</pre>";
+        msg += "Details:<br />\n<pre>" + json.details + "\n</preventDefault>";
       }
+      showHtmlError(msg);
+    } else {
+      showPlainError(msg);
     }
-    showError(msg);
   }).always(function() {
     $('#transplant').button('reset');
   });
@@ -55,7 +63,12 @@ function showSuccess(msg) {
   $('#msgError').html('').hide();
 }
 
-function showError(msg) {
+function showHtmlError(msg) {
   $('#msgError').html(msg).show();
+  $('#msgSuccess').html('').hide();
+}
+
+function showPlainError(msg) {
+  $('#msgError').text(msg).show();
   $('#msgSuccess').html('').hide();
 }

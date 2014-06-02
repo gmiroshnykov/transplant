@@ -64,15 +64,15 @@ class TransplantTestCase(unittest.TestCase):
         with open(test_file, 'r') as f:
             return f.read()
 
-    def test_happy_path(self):
+    def te1st_happy_path(self):
         self._set_test_file_content(self.src_dir, "Goodbye World!\n")
         self.src.hg_commit("Goodbye World!")
-        rev = self.src.hg_id()
+        commit = self.src.hg_id()
 
         result = self.app.post('/transplant', data=dict(
             src='test-src',
             dst='test-dst',
-            rev=rev
+            commit=commit
         ))
 
         assert result.status_code == 200
@@ -85,7 +85,32 @@ class TransplantTestCase(unittest.TestCase):
         content = self._get_test_file_content(self.dst_dir)
         assert content == "Goodbye World!\n"
 
-    def test_error_conflict(self):
+    def test_change_messsage(self):
+        self._set_test_file_content(self.src_dir, "Goodbye World!\n")
+        self.src.hg_commit("Goodbye World!")
+        commit = self.src.hg_id()
+
+        result = self.app.post('/transplant', data=dict(
+            src='test-src',
+            dst='test-dst',
+            commit=commit,
+            message="Goodbye World! a=me"
+        ))
+
+        assert result.status_code == 200
+
+        data = json.loads(result.data)
+        assert 'tip' in data
+
+        self.dst.hg_update('tip')
+
+        content = self._get_test_file_content(self.dst_dir)
+        assert content == "Goodbye World!\n"
+
+        assert self.dst['tip'].desc == "Goodbye World! a=me"
+
+
+    def tes1t_error_conflict(self):
         content = "Goodbye World!\n"
         self._set_test_file_content(self.dst_dir, content)
         self.dst.hg_commit("Goodbye World!")
@@ -94,12 +119,12 @@ class TransplantTestCase(unittest.TestCase):
         self._set_test_file_content(self.src_dir, content)
         self.src.hg_commit("Hello again!")
 
-        rev = self.src.hg_id()
+        commit = self.src.hg_id()
 
         result = self.app.post('/transplant', data=dict(
             src='test-src',
             dst='test-dst',
-            rev=rev
+            commit=commit
         ))
 
         assert result.status_code == 409

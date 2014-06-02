@@ -67,16 +67,31 @@ def mkdirp(directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-def do_transplant(src, dst, rev):
+def amend(repo, message):
+    phase = get_phase(repo)
+    if phase == 'public':
+        app.logger.info('force-changing current commit phase to "draft"')
+        repo.hg_command('phase', '--draft', '--force', 'tip')
+
+    app.logger.info('rewriting commit message')
+    repo.hg_command('commit', '--amend', '--message', message);
+
+def get_phase(repo, rev='tip'):
+    return repo.hg_log(rev, template="{phase}")
+
+def do_transplant(src, dst, commit, message=None):
     try:
         dst_repo = clone_or_pull(dst)
         src_url = get_repo_url(src)
 
         try:
-            app.logger.info('transplanting revision "%s" from "%s" to "%s"', rev, src, dst)
+            app.logger.info('transplanting revision "%s" from "%s" to "%s"', commit, src, dst)
             result = dst_repo.hg_command('--config', 'extensions.transplant=',
-                'transplant', '--source', src_url, rev)
+                'transplant', '--source', src_url, commit)
             app.logger.debug('hg transplant: %s', result)
+
+            if message is not None:
+                amend(dst_repo, message)
 
             app.logger.info('pushing "%s"', dst)
             safe_push(dst_repo)
@@ -108,7 +123,8 @@ def transplant():
 
     src = params.get('src')
     dst = params.get('dst')
-    rev = params.get('rev')
+    commit = params.get('commit')
+    message = params.get('message')
 
     if not src:
         return jsonify({'error': 'No src'}), 400
@@ -116,8 +132,8 @@ def transplant():
     if not dst:
         return jsonify({'error': 'No dst'}), 400
 
-    if not rev:
-        return jsonify({'error': 'No rev'}), 400
+    if not commit:
+        return jsonify({'error': 'No commit'}), 400
 
     if not has_repo(src):
         msg = 'Unknown src repository: {}'.format(src)
@@ -131,7 +147,7 @@ def transplant():
         msg = 'Transplant from {} to {} is not allowed'.format(src, dst)
         return jsonify({'error': msg}), 400
 
-    return do_transplant(src, dst, rev)
+    return do_transplant(src, dst, commit, message=message)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

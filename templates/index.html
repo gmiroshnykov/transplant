@@ -31,10 +31,14 @@
             <p class="help-block">Destination repository to transplant revision set to.</p>
           </div>
           <div class="form-group">
-            <label for="revision">Revision set (see <code>hg help revset</code>)</label>
-            <input id="revision" name="rev" placeholder="Revision set" required="required" type="text" class="form-control">
+            <label for="commit">Commit ID</label>
+            <input id="commit" name="commit" placeholder="Commit ID" required="required" type="text" class="form-control">
+            <p class="help-block">Commit ID to transplant from source to destination repository.</p>
           </div>
-          <p class="help-block">Revision or a range of revisions to transplant from source to destination repository.</p>
+          <div class="form-group">
+            <label for="message">Commit message (optional)</label>
+            <textarea id="message" name="message" rows="3" class="form-control"></textarea>
+          </div>
           <button id="transplant" data-loading-text="Transplanting..." type="submit" class="btn btn-primary btn-lg">Transplant</button>
         </form>
 
