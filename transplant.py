@@ -1,7 +1,11 @@
 import os
 import fnmatch
+import logging
 from flask import Flask, request, redirect, jsonify, render_template
 from hgapi.hgapi import Repo, HgException
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 TRANSPLANT_FILTER = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'transplant_filter.py')
 
@@ -34,12 +38,12 @@ def clone_or_pull(name):
     repo_dir = get_repo_dir(name)
     repo = Repo(repo_dir)
     if not os.path.exists(repo_dir):
-        app.logger.info('cloning repository "%s"', name)
+        logger.info('cloning repository "%s"', name)
         Repo.hg_clone(repo_url, repo_dir)
     else:
-        app.logger.info('pulling repository "%s"', name)
+        logger.info('pulling repository "%s"', name)
         repo.hg_pull()
-        app.logger.info('updating repository "%s"', name)
+        logger.info('updating repository "%s"', name)
         repo.hg_update('.')
 
     return repo
@@ -72,10 +76,10 @@ def mkdirp(directory):
 def amend(repo, message):
     phase = get_phase(repo)
     if phase == 'public':
-        app.logger.info('force-changing current commit phase to "draft"')
+        logger.info('force-changing current commit phase to "draft"')
         repo.hg_command('phase', '--draft', '--force', 'tip')
 
-    app.logger.info('rewriting commit message')
+    logger.info('rewriting commit message')
     repo.hg_command('commit', '--amend', '--message', message);
 
 def get_phase(repo, rev='tip'):
@@ -96,16 +100,16 @@ def do_transplant(src, dst, commit, message=None):
 
             cmd.append(commit)
 
-            app.logger.info('transplanting revision "%s" from "%s" to "%s"', commit, src, dst)
-            app.logger.debug('command: %s', cmd)
+            logger.info('transplanting revision "%s" from "%s" to "%s"', commit, src, dst)
+            logger.debug('command: %s', cmd)
             result = dst_repo.hg_command(*cmd)
-            app.logger.debug('hg transplant: %s', result)
+            logger.debug('hg transplant: %s', result)
 
-            app.logger.info('pushing "%s"', dst)
+            logger.info('pushing "%s"', dst)
             safe_push(dst_repo)
 
             tip = dst_repo.hg_id()
-            app.logger.info('tip: %s', tip)
+            logger.info('tip: %s', tip)
             return jsonify({'tip': tip})
 
         finally:
