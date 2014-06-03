@@ -1,16 +1,24 @@
 import os
+import time
 import fnmatch
 import logging
 from flask import Flask, request, redirect, jsonify, render_template
-from hgapi.hgapi import Repo, HgException
+from repository import Repository, MercurialException
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 TRANSPLANT_FILTER = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'transplant_filter.py')
+PULL_INTERVAL = 60
 
 app = Flask(__name__)
 app.config.from_object('config')
+
+# make sure that WORKDIR exists
+if not os.path.exists(app.config['WORKDIR']):
+    os.makedirs(app.config['WORKDIR'])
+
+
 
 def is_allowed_transplant(src, dst):
     if src not in app.config['RULES']:
@@ -30,98 +38,106 @@ def get_repo_url(name):
 def get_repo_dir(name):
     return os.path.join(app.config['WORKDIR'], name)
 
-def clone_or_pull(name):
-    # make sure that WORKDIR exists
-    mkdirp(app.config['WORKDIR'])
-
+def clone_or_pull(name, refresh=False):
     repo_url = get_repo_url(name)
     repo_dir = get_repo_dir(name)
-    repo = Repo(repo_dir)
+
     if not os.path.exists(repo_dir):
         logger.info('cloning repository "%s"', name)
-        Repo.hg_clone(repo_url, repo_dir)
+        repository = Repository.clone(repo_url, repo_dir)
+        set_last_pull_date(name)
     else:
-        logger.info('pulling repository "%s"', name)
-        repo.hg_pull()
-        logger.info('updating repository "%s"', name)
-        repo.hg_update('.')
+        repository = Repository(repo_dir)
 
-    return repo
+        last_pull_date = get_last_pull_date(name)
+
+        if refresh or last_pull_date < time.time() - PULL_INTERVAL:
+            logger.info('pulling repository "%s"', name)
+            repository.pull(update=True)
+            set_last_pull_date(name)
+
+    return repository
+
+def get_last_pull_date(name):
+    repo_dir = get_repo_dir(name)
+    last_pull_date_file = os.path.join(repo_dir, '.hg', 'last_pull_date');
+    if not os.path.exists(last_pull_date_file):
+        return 0.0
+
+    with open(last_pull_date_file, 'r') as f:
+        try:
+            timestamp = float(f.read())
+        except Exception, e:
+            logger.exception('could not read last pull date')
+            return 0.0
+
+    return timestamp
+
+def set_last_pull_date(name):
+    timestamp = time.time()
+    repo_dir = get_repo_dir(name)
+    last_pull_date_file = os.path.join(repo_dir, '.hg', 'last_pull_date');
+    with open(last_pull_date_file, 'w') as f:
+        f.write(str(timestamp))
+
+def get_commit_info(repository, commit_id):
+    try:
+        log = repository.log(rev=commit_id)
+        return log[0]
+    except MercurialException, e:
+        if 'unknown revision' in e.stderr:
+            return False
 
 def cleanup(repo):
-    repo.hg_update('.', clean=True)
-
-    repo.hg_command('--config', 'extensions.purge=',
-        'purge', '--abort-on-err', '--all')
+    repo.update(clean=True)
+    repo.purge(abort_on_err=True, all=True)
 
     try:
-        repo.hg_command('strip', '--no-backup', 'outgoing()')
-    except HgException, e:
-        if 'empty revision set' not in str(e):
+        repo.strip('outgoing()', no_backup=True)
+    except MercurialException, e:
+        if 'empty revision set' not in e.stderr:
             raise e
 
-def safe_push(repo, *args):
-    result = None
+def raw_transplant(repository, source, commit_id, message=None):
+    filter = None
+    env = os.environ.copy()
+
+    if message is not None:
+        filter = TRANSPLANT_FILTER
+        env['TRANSPLANT_MESSAGE'] = message
+
+    return repository.transplant(commit_id, source=source, filter=filter, env=env)
+
+def do_transplant(src, dst, commit_id, message=None):
     try:
-        result = repo.hg_push(*args)
-    except HgException, e:
-        if e.exit_code != 1:
-            raise e
-    return result
-
-def mkdirp(directory):
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
-def amend(repo, message):
-    phase = get_phase(repo)
-    if phase == 'public':
-        logger.info('force-changing current commit phase to "draft"')
-        repo.hg_command('phase', '--draft', '--force', 'tip')
-
-    logger.info('rewriting commit message')
-    repo.hg_command('commit', '--amend', '--message', message);
-
-def get_phase(repo, rev='tip'):
-    return repo.hg_log(rev, template="{phase}")
-
-def do_transplant(src, dst, commit, message=None):
-    try:
-        dst_repo = clone_or_pull(dst)
+        dst_repo = clone_or_pull(dst, refresh=True)
         src_url = get_repo_url(src)
 
         try:
-            cmd = ['--config', 'extensions.transplant=',
-                'transplant','--source', src_url]
-
-            if message is not None:
-                dst_repo._env['TRANSPLANT_MESSAGE'] = message
-                cmd.extend(['--filter', TRANSPLANT_FILTER])
-
-            cmd.append(commit)
-
-            logger.info('transplanting revision "%s" from "%s" to "%s"', commit, src, dst)
-            logger.debug('command: %s', cmd)
-            result = dst_repo.hg_command(*cmd)
+            logger.info('transplanting revision "%s" from "%s" to "%s"', commit_id, src, dst)
+            result = raw_transplant(dst_repo, src_url, commit_id, message)
             logger.debug('hg transplant: %s', result)
 
             logger.info('pushing "%s"', dst)
-            safe_push(dst_repo)
+            dst_repo.push()
 
-            tip = dst_repo.hg_id()
+            tip = dst_repo.id(id=True)
             logger.info('tip: %s', tip)
             return jsonify({'tip': tip})
 
         finally:
-            if 'TRANSPLANT_MESSAGE' in dst_repo._env:
-                del dst_repo._env['TRANSPLANT_MESSAGE']
-
             cleanup(dst_repo)
 
-    except HgException, e:
+    except MercurialException, e:
+        print e
         return jsonify({
             'error': 'Transplant failed',
-            'details': str(e)
+            'details': {
+                'cmd': e.cmd,
+                'returncode': e.returncode,
+                'stdout': e.stdout,
+                'stderr': e.stderr
+            }
         }), 409
 
 
@@ -129,6 +145,18 @@ def do_transplant(src, dst, commit, message=None):
 def index():
     rules = app.config['RULES']
     return render_template('index.html', rules=rules)
+
+@app.route('/repositories/<repository_id>/commits/<commit_id>')
+def show_commit(repository_id, commit_id):
+    repository = clone_or_pull(repository_id)
+    commit_info = get_commit_info(repository, commit_id)
+    if not commit_info:
+        return jsonify({
+            'error': 'Commit not found',
+            'commit': commit_id
+        }), 404
+
+    return jsonify(commit_info)
 
 @app.route('/transplant', methods = ['POST'])
 def transplant():

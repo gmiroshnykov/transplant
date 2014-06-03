@@ -5,6 +5,7 @@ import shutil
 import json
 import fnmatch
 from hgapi.hgapi import Repo, HgException
+from repository import Repository, MercurialException
 
 import transplant
 
@@ -20,17 +21,12 @@ class TransplantTestCase(unittest.TestCase):
         self.dst_dir = tempfile.mkdtemp()
         self.workdir = tempfile.mkdtemp()
 
-        self.src = Repo(self.src_dir)
-        self.dst = Repo(self.dst_dir)
-
-        self.src.hg_init()
-        self.dst.hg_init()
+        self.src = Repository.init(self.src_dir)
+        self.dst = Repository.init(self.dst_dir)
 
         self._set_test_file_content(self.src_dir, "Hello World!\n")
-        self.src.hg_addremove()
-        self.src.hg_commit("Initial commit")
-        self.dst.hg_pull(self.src_dir)
-        self.dst.hg_update('tip')
+        self.src.commit("Initial commit", addremove=True)
+        self.dst.pull(self.src_dir, update=True)
 
     def configure_app(self):
         transplant.app.config['REPOSITORIES'] = {
@@ -45,6 +41,10 @@ class TransplantTestCase(unittest.TestCase):
         transplant.app.config['WORKDIR'] = self.workdir
 
     def tearDown(self):
+        print "src_dir: " + self.src_dir
+        print "dst_dir: " + self.dst_dir
+        print "workdir: " + self.workdir
+
         if transplant.app.debug:
             print "src_dir: " + self.src_dir
             print "dst_dir: " + self.dst_dir
@@ -66,8 +66,8 @@ class TransplantTestCase(unittest.TestCase):
 
     def test_happy_path(self):
         self._set_test_file_content(self.src_dir, "Goodbye World!\n")
-        self.src.hg_commit("Goodbye World!")
-        commit = self.src.hg_id()
+        self.src.commit("Goodbye World!")
+        commit = self.src.id(id=True)
 
         result = self.app.post('/transplant', data=dict(
             src='test-src',
@@ -80,15 +80,15 @@ class TransplantTestCase(unittest.TestCase):
         data = json.loads(result.data)
         assert 'tip' in data
 
-        self.dst.hg_update('tip')
+        self.dst.update()
 
         content = self._get_test_file_content(self.dst_dir)
         assert content == "Goodbye World!\n"
 
     def test_change_messsage(self):
         self._set_test_file_content(self.src_dir, "Goodbye World!\n")
-        self.src.hg_commit("Goodbye World!")
-        commit = self.src.hg_id()
+        self.src.commit("Goodbye World!")
+        commit = self.src.id(id=True)
 
         result = self.app.post('/transplant', data=dict(
             src='test-src',
@@ -102,24 +102,26 @@ class TransplantTestCase(unittest.TestCase):
         data = json.loads(result.data)
         assert 'tip' in data
 
-        self.dst.hg_update('tip')
+        self.dst.update()
 
         content = self._get_test_file_content(self.dst_dir)
         assert content == "Goodbye World!\n"
 
-        assert self.dst['tip'].desc == "Goodbye World! a=me"
+        commit_info = self.dst.log(rev='tip')[0]
+
+        assert commit_info['message'] == "Goodbye World! a=me"
 
 
     def test_error_conflict(self):
         content = "Goodbye World!\n"
         self._set_test_file_content(self.dst_dir, content)
-        self.dst.hg_commit("Goodbye World!")
+        self.dst.commit("Goodbye World!")
 
         content = "Hello again!\n"
         self._set_test_file_content(self.src_dir, content)
-        self.src.hg_commit("Hello again!")
+        self.src.commit("Hello again!")
 
-        commit = self.src.hg_id()
+        commit = self.src.id(id=True)
 
         result = self.app.post('/transplant', data=dict(
             src='test-src',
@@ -134,7 +136,7 @@ class TransplantTestCase(unittest.TestCase):
         assert 'details' in data
 
         # check that content is not updated
-        self.dst.hg_update('tip')
+        self.dst.update()
 
         actual_content = self._get_test_file_content(self.dst_dir)
         assert content != actual_content
