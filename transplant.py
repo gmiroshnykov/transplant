@@ -89,6 +89,7 @@ def get_commit_info(repository, commit_id):
             return False
 
 def cleanup(repo):
+    logger.info('cleaning up')
     repo.update(clean=True)
     repo.purge(abort_on_err=True, all=True)
 
@@ -108,15 +109,13 @@ def raw_transplant(repository, source, commit_id, message=None):
 
     return repository.transplant(commit_id, source=source, filter=filter, env=env)
 
-def do_transplant(src, dst, commit_id, message=None):
+def do_transplant(src, dst, commits):
     try:
         dst_repo = clone_or_pull(dst, refresh=True)
-        src_url = get_repo_url(src)
 
         try:
-            logger.info('transplanting revision "%s" from "%s" to "%s"', commit_id, src, dst)
-            result = raw_transplant(dst_repo, src_url, commit_id, message)
-            logger.debug('hg transplant: %s', result)
+            for commit in commits:
+                do_transplant_commit(src, dst, commit)
 
             logger.info('pushing "%s"', dst)
             dst_repo.push()
@@ -141,6 +140,19 @@ def do_transplant(src, dst, commit_id, message=None):
         }), 409
 
 
+def do_transplant_commit(src, dst, commit):
+    dst_repo = Repository(get_repo_dir(dst))
+    src_url = get_repo_url(src)
+
+    logger.info('transplanting revision "%s" from "%s" to "%s"', commit['id'], src, dst)
+
+    if 'message' not in commit:
+        result = raw_transplant(dst_repo, src_url, commit['id'])
+    else:
+        result = raw_transplant(dst_repo, src_url, commit['id'], message=commit['message'])
+
+    logger.debug('hg transplant: %s', result)
+
 @app.route('/')
 def index():
     rules = app.config['RULES']
@@ -162,12 +174,11 @@ def show_commit(repository_id, commit_id):
 def transplant():
     params = request.get_json()
     if not params:
-        params = request.form
+        return jsonify({'error': 'No src'}), 400
 
     src = params.get('src')
     dst = params.get('dst')
-    commit = params.get('commit')
-    message = params.get('message')
+    commits = params.get('commits')
 
     if not src:
         return jsonify({'error': 'No src'}), 400
@@ -175,8 +186,8 @@ def transplant():
     if not dst:
         return jsonify({'error': 'No dst'}), 400
 
-    if not commit:
-        return jsonify({'error': 'No commit'}), 400
+    if not commits:
+        return jsonify({'error': 'No commits'}), 400
 
     if not has_repo(src):
         msg = 'Unknown src repository: {}'.format(src)
@@ -190,7 +201,7 @@ def transplant():
         msg = 'Transplant from {} to {} is not allowed'.format(src, dst)
         return jsonify({'error': msg}), 400
 
-    return do_transplant(src, dst, commit, message=message)
+    return do_transplant(src, dst, commits)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))

@@ -67,13 +67,15 @@ class TransplantTestCase(unittest.TestCase):
     def test_happy_path(self):
         self._set_test_file_content(self.src_dir, "Goodbye World!\n")
         self.src.commit("Goodbye World!")
-        commit = self.src.id(id=True)
+        commit = {
+            "id": self.src.id(id=True)
+        }
 
-        result = self.app.post('/transplant', data=dict(
-            src='test-src',
-            dst='test-dst',
-            commit=commit
-        ))
+        result = self.app.post('/transplant', data=json.dumps({
+            'src': 'test-src',
+            'dst': 'test-dst',
+            'commits': [commit]
+        }), content_type='application/json')
 
         assert result.status_code == 200
 
@@ -88,14 +90,17 @@ class TransplantTestCase(unittest.TestCase):
     def test_change_messsage(self):
         self._set_test_file_content(self.src_dir, "Goodbye World!\n")
         self.src.commit("Goodbye World!")
-        commit = self.src.id(id=True)
 
-        result = self.app.post('/transplant', data=dict(
-            src='test-src',
-            dst='test-dst',
-            commit=commit,
-            message="Goodbye World! a=me"
-        ))
+        commit = {
+            "id": self.src.id(id=True),
+            "message": "Goodbye World! a=me"
+        }
+
+        result = self.app.post('/transplant', data=json.dumps({
+            'src': 'test-src',
+            'dst': 'test-dst',
+            'commits': [commit]
+        }), content_type='application/json')
 
         assert result.status_code == 200
 
@@ -121,13 +126,15 @@ class TransplantTestCase(unittest.TestCase):
         self._set_test_file_content(self.src_dir, content)
         self.src.commit("Hello again!")
 
-        commit = self.src.id(id=True)
+        commit = {
+            "id": self.src.id(id=True)
+        }
 
-        result = self.app.post('/transplant', data=dict(
-            src='test-src',
-            dst='test-dst',
-            commit=commit
-        ))
+        result = self.app.post('/transplant', data=json.dumps({
+            'src': 'test-src',
+            'dst': 'test-dst',
+            'commits': [commit]
+        }), content_type='application/json')
 
         assert result.status_code == 409
 
