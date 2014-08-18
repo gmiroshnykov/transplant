@@ -88,6 +88,10 @@ def get_commit_info(repository, commit_id):
         if 'unknown revision' in e.stderr:
             return False
 
+def get_commits_info(repository, revset):
+    log = repository.log(rev=revset)
+    return log
+
 def cleanup(repo):
     logger.info('cleaning up')
     repo.update(clean=True)
@@ -158,17 +162,24 @@ def index():
     rules = app.config['RULES']
     return render_template('index.html', rules=rules)
 
-@app.route('/repositories/<repository_id>/commits/<commit_id>')
-def show_commit(repository_id, commit_id):
-    repository = clone_or_pull(repository_id)
-    commit_info = get_commit_info(repository, commit_id)
-    if not commit_info:
-        return jsonify({
-            'error': 'Commit not found',
-            'commit': commit_id
-        }), 404
+@app.route('/repositories/<repository_id>/commits/')
+def show_commits(repository_id):
+    revset = request.values.get('revset')
+    if not revset:
+        return jsonify({'error': 'No revset'}), 400
 
-    return jsonify(commit_info)
+    repository = clone_or_pull(repository_id)
+
+    try:
+        commits_info = get_commits_info(repository, revset)
+    except MercurialException, e:
+        return jsonify({
+            'error': e.stderr
+        }), 400
+
+    return jsonify({
+        'commits': commits_info
+    })
 
 @app.route('/transplant', methods = ['POST'])
 def transplant():

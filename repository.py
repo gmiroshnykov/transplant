@@ -85,9 +85,14 @@ class Repository(object):
             node = logentry.get('node')
             date = logentry.find('date').text
             message = logentry.find('msg').text
+            xmlAuthor = logentry.find('author')
+            author = xmlAuthor.text
+            author_email = xmlAuthor.get('email')
             result = dict(
                 node=node,
                 date=date,
+                author=author,
+                author_email = author_email,
                 message = message
             )
             results.append(result)
