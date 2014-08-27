@@ -38,7 +38,7 @@ def get_repo_url(name):
     return app.config['REPOSITORIES'][name]
 
 def get_repo_dir(name):
-    return os.path.join(app.config['WORKDIR'], name)
+    return os.path.abspath(os.path.join(app.config['WORKDIR'], name))
 
 def clone_or_pull(name, refresh=False):
     repo_url = get_repo_url(name)
@@ -118,6 +118,7 @@ def raw_transplant(repository, source, commit_id, message=None):
 
 def do_transplant(src, dst, commits):
     try:
+        clone_or_pull(src, refresh=True)
         dst_repo = clone_or_pull(dst, refresh=True)
 
         try:
@@ -149,14 +150,14 @@ def do_transplant(src, dst, commits):
 
 def do_transplant_commit(src, dst, commit):
     dst_repo = Repository(get_repo_dir(dst))
-    src_url = get_repo_url(src)
+    src_dir = get_repo_dir(src)
 
     logger.info('transplanting revision "%s" from "%s" to "%s"', commit['id'], src, dst)
 
     if 'message' not in commit:
-        result = raw_transplant(dst_repo, src_url, commit['id'])
+        result = raw_transplant(dst_repo, src_dir, commit['id'])
     else:
-        result = raw_transplant(dst_repo, src_url, commit['id'], message=commit['message'])
+        result = raw_transplant(dst_repo, src_dir, commit['id'], message=commit['message'])
 
     logger.debug('hg transplant: %s', result)
 
