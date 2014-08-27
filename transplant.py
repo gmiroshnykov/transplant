@@ -2,6 +2,7 @@ import os
 import time
 import fnmatch
 import logging
+import json
 from flask import Flask, request, redirect, jsonify, render_template
 from repository import Repository, MercurialException
 
@@ -88,8 +89,9 @@ def get_commit_info(repository, commit_id):
         if 'unknown revision' in e.stderr:
             return False
 
-def get_commits_info(repository, revset):
-    log = repository.log(rev=revset)
+def get_commits_info(repository, revsets):
+    rev = "(" + ") or (".join(revsets) + ")"
+    log = repository.log(rev=rev)
     return log
 
 def cleanup(repo):
@@ -164,14 +166,14 @@ def index():
 
 @app.route('/repositories/<repository_id>/commits/')
 def show_commits(repository_id):
-    revset = request.values.get('revset')
-    if not revset:
-        return jsonify({'error': 'No revset'}), 400
+    revsets = request.values.get('revsets')
+    if not revsets:
+        return jsonify({'error': 'No revsets'}), 400
+    revsets = json.loads(revsets)
 
     repository = clone_or_pull(repository_id)
-
     try:
-        commits_info = get_commits_info(repository, revset)
+        commits_info = get_commits_info(repository, revsets)
     except MercurialException, e:
         return jsonify({
             'error': e.stderr

@@ -10,7 +10,7 @@ $(function() {
   $('#source').change(populateDestionations);
   $('#source').change(refreshCommitInfo);
   $('#source').change(uiRevset);
-  $('#revset').keyup(uiRevset);
+  $('#revsets').keyup(uiRevset);
   $('#destination').change(uiGoToStep2);
   $('#revset-lookup').click(revsetLookup);
   $('#go-to-step-2').click(goToStep2);
@@ -33,9 +33,9 @@ function populateSelect(id, values) {
 
 function uiRevset() {
   var src = $('#source').val();
-  var revset = $('#revset').val();
+  var revsets = $('#revsets').val();
 
-  if (!src || !revset) {
+  if (!src || !revsets) {
     $('#revset-lookup').addClass('disabled');
   } else {
     $('#revset-lookup').removeClass('disabled');
@@ -46,16 +46,18 @@ function revsetLookup(e) {
   e.preventDefault();
 
   var src = $('#source').val();
-  var revset = $('#revset').val();
+  var revsets = $('#revsets').val();
 
-  if (!src || !revset) {
+  if (!src || !revsets) {
     return;
   }
+
+  revsets = parseRevsets(revsets);
 
   currentCommits = [];
   uiGoToStep2();
   $('#revset-lookup').button('loading');
-  var url = '/repositories/' + src + '/commits/?revset=' + encodeURIComponent(revset);
+  var url = '/repositories/' + src + '/commits/?revsets=' + encodeURIComponent(JSON.stringify(revsets));
   $.get(url, function(data, status, xhr) {
     populateCommits(data.commits);
   }).fail(function(xhr, status, error) {
@@ -118,16 +120,12 @@ function goToStep2(e) {
 
   currentSrc = $('#source').val();
   currentDst = $('#destination').val();
-  currentRevset = $('#revset').val();
 
   $('#transplant-step-1').addClass('hidden');
   $('#transplant-step-2').removeClass('hidden');
 
-  console.log(currentSrc, currentDst, currentRevset);
-
   $('#step-2-src').text(currentSrc);
   $('#step-2-dst').text(currentDst);
-  $('#step-2-revset').text(currentRevset);
 
   var stepTwoCommits = $('#transplant-step-2-commits');
   currentCommits.forEach(function(commit) {
@@ -250,7 +248,7 @@ function transplant(e) {
     data: JSON.stringify(payload),
     contentType: 'application/json'
   }).success(function(data, status, xhr) {
-    var msg = 'Tip: ' + data.tip;
+    var msg = 'Success: new tip = ' + data.tip;
     showSuccess(msg);
   }).fail(function(xhr, status, error) {
     var msg = xhr.responseText;
@@ -287,4 +285,15 @@ function showHtmlError(msg) {
 function showPlainError(msg) {
   $('#msgError').text(msg).show();
   $('#msgSuccess').html('').hide();
+}
+
+function parseRevsets(rawRevsets) {
+  var revsets = rawRevsets.split("\n")
+    .map(function(s) {
+      return String.prototype.trim.call(s)
+    })
+    .filter(function(s) {
+      return s;
+    });
+  return revsets;
 }

@@ -32,10 +32,10 @@
             <p class="help-block">Destination repository to transplant revision set to.</p>
           </div>
           <div id="revset-form-group" class="form-group">
-            <label for="revset" class="control-label">Revision Set</label>
+            <label for="revsets" class="control-label">Revision Sets (one per line)</label>
             <div class="row">
               <div class="col-md-10">
-                <input id="revset" name="revset" placeholder="Revset" required="required" type="text" class="form-control" />
+                <textarea id="revsets" name="revsets" required="required" class="form-control" rows="3"></textarea>
               </div>
               <div class="col-md-2">
                 <button id="revset-lookup" class="btn btn-block btn-primary disabled" data-loading-text="Loading..." >Go</button>
@@ -72,7 +72,6 @@
           <h2>Step 2: edit commit messages</h2>
           <h4>Source: <code id="step-2-src"></code></h4>
           <h4>Destination: <code id="step-2-dst"></code></h4>
-          <h4>Revision Set: <code id="step-2-revset"></code></h4>
           <div id="transplant-step-2-commits"></div>
           <div class="text-right">
             <button id="transplant" data-loading-text="Transplanting..." class="btn btn-primary btn-lg">Transplant</button>
