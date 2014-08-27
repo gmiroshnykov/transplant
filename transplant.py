@@ -162,7 +162,8 @@ def do_transplant_commit(src, dst, commit):
 @app.route('/')
 def index():
     rules = app.config['RULES']
-    return render_template('index.html', rules=rules)
+    repositories = app.config['REPOSITORIES']
+    return render_template('index.html', rules=rules, repositories=repositories)
 
 @app.route('/repositories/<repository_id>/commits/')
 def show_commits(repository_id):

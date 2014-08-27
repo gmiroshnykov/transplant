@@ -6,7 +6,7 @@ var currentRevset = null;
 var currentCommits = [];
 
 $(function() {
-  populateSelect('source', Object.keys(RULES));
+  populateRepositories('source', Object.keys(RULES));
   $('#source').change(populateDestionations);
   $('#source').change(refreshCommitInfo);
   $('#source').change(uiRevset);
@@ -20,14 +20,15 @@ $(function() {
 function populateDestionations() {
   var source = $('#source').val();
   var destionations = RULES[source] || [];
-  populateSelect('destination', destionations);
+  populateRepositories('destination', destionations);
 }
 
-function populateSelect(id, values) {
+function populateRepositories(id, repositories) {
   $('#' + id + ' option:gt(0)').remove();
   var el = $('#' + id);
-  values.forEach(function(value) {
-    el.append($('<option></option>').text(value));
+  repositories.forEach(function(name) {
+    var info = getRepositoryInfo(name);
+    el.append($('<option></option>').text(info).attr('value', name));
   });
 }
 
@@ -124,8 +125,11 @@ function goToStep2(e) {
   $('#transplant-step-1').addClass('hidden');
   $('#transplant-step-2').removeClass('hidden');
 
-  $('#step-2-src').text(currentSrc);
-  $('#step-2-dst').text(currentDst);
+  var srcInfo = getRepositoryInfo(currentSrc);
+  var dstInfo = getRepositoryInfo(currentDst);
+
+  $('#step-2-src').text(srcInfo);
+  $('#step-2-dst').text(dstInfo);
 
   var stepTwoCommits = $('#transplant-step-2-commits');
   currentCommits.forEach(function(commit) {
@@ -296,4 +300,10 @@ function parseRevsets(rawRevsets) {
       return s;
     });
   return revsets;
+}
+
+function getRepositoryInfo(name) {
+  var path = REPOSITORIES[name];
+  var info = name + ' (' + path + ')';
+  return info;
 }
