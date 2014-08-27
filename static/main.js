@@ -13,6 +13,7 @@ $(function() {
   $('#revsets').keyup(uiRevset);
   $('#destination').change(uiGoToStep2);
   $('#revset-lookup').click(revsetLookup);
+  $('#go-to-step-1').click(goToStep1);
   $('#go-to-step-2').click(goToStep2);
   $('#transplant').click(transplant);
 });
@@ -80,7 +81,7 @@ function populateCommits(commits) {
     var message = commit.message;
     var offset = message.indexOf("\n");
     if (offset !== -1) {
-      message = message.substr(1, offset - 1);
+      message = message.substr(0, offset - 1);
     }
 
     var row = '<tr>';
@@ -116,6 +117,13 @@ function uiGoToStep2() {
   }
 }
 
+function goToStep1(e) {
+  e.preventDefault();
+
+  $('#transplant-step-1').removeClass('hidden');
+  $('#transplant-step-2').addClass('hidden');
+}
+
 function goToStep2(e) {
   e.preventDefault();
 
@@ -132,6 +140,7 @@ function goToStep2(e) {
   $('#step-2-dst').text(dstInfo);
 
   var stepTwoCommits = $('#transplant-step-2-commits');
+  stepTwoCommits.children().remove();
   currentCommits.forEach(function(commit) {
     var commitId = commit.node.substr(0, 12);
     var author = commit.author;
@@ -173,7 +182,6 @@ function refreshCommitInfo() {
     return;
   }
 
-  console.log('commit ID: %s', commitId);
   showCommitInfoProgress();
   setDefaultCommitMessage('');
 
