@@ -13,7 +13,7 @@
   </script>
 </head>
   <body>
-    <div class="container" style="margin-top: 1em">
+    <div class="container" style="margin-top: 1em; margin-bottom: 1em">
       <div>
         <h1>Transplant</h1>
         <form id="transplant-step-1" role="form">
@@ -36,14 +36,14 @@
             <label for="revsets" class="control-label">Revision Sets (one per line)</label>
             <div class="row">
               <div class="col-md-10">
-                <textarea id="revsets" name="revsets" required="required" class="form-control" rows="3"></textarea>
+                <textarea id="revsets" name="revsets" required="required" class="form-control" rows="5"></textarea>
               </div>
               <div class="col-md-2">
                 <button id="revset-lookup" class="btn btn-block btn-primary disabled" data-loading-text="Loading..." >Go</button>
               </div>
             </div>
             <p class="help-block">
-              Revision Set to transplant from source to destination repository,
+              A list of Revision Sets to transplant from source to destination repository,
               see <a href="http://www.selenic.com/hg/help/revsets" target="_blank"><code>hg help revsets</code></a>
             </p>
           </div>
@@ -60,7 +60,7 @@
               </thead>
               <tbody>
                 <tr>
-                  <td colspan="4" class="text-center"><em>Fill in a Revision Set above to populate this table.</em></td>
+                  <td colspan="4" class="text-center"><em>Fill in some Revision Sets above to populate this table.</em></td>
                 </tr>
               </tbody>
             </table>

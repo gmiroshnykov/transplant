@@ -11,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 TRANSPLANT_FILTER = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'transplant_filter.py')
 PULL_INTERVAL = 60
+MAX_COMMITS = 3
 
 app = Flask(__name__)
 app.config.from_object('config')
@@ -159,6 +160,11 @@ def do_transplant_commit(src, dst, commit):
 
     logger.debug('hg transplant: %s', result)
 
+def too_many_commits_error(commits_count):
+    return jsonify({
+        'error': "You're trying to transplant {} commits which is above {} commits limit".format(commits_count, MAX_COMMITS)
+    }), 400
+
 @app.route('/')
 def index():
     rules = app.config['RULES']
@@ -179,6 +185,10 @@ def show_commits(repository_id):
         return jsonify({
             'error': e.stderr
         }), 400
+
+    commits_count = len(commits_info)
+    if commits_count > MAX_COMMITS:
+        return too_many_commits_error(commits_count);
 
     return jsonify({
         'commits': commits_info
@@ -214,6 +224,10 @@ def transplant():
     if not is_allowed_transplant(src, dst):
         msg = 'Transplant from {} to {} is not allowed'.format(src, dst)
         return jsonify({'error': msg}), 400
+
+    commits_count = len(commits)
+    if commits_count > MAX_COMMITS:
+        return too_many_commits_error(commits_count);
 
     return do_transplant(src, dst, commits)
 
