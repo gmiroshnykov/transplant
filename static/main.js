@@ -20,16 +20,18 @@ $(function() {
 
 function populateDestionations() {
   var source = $('#source').val();
-  var destionations = _.omit(REPOSITORIES, source);
+  var destionations = _.reject(REPOSITORIES, function(repository) {
+    return repository.name == source;
+  });
   populateRepositories('destination', destionations);
 }
 
 function populateRepositories(id, repositories) {
   $('#' + id + ' option:gt(0)').remove();
   var el = $('#' + id);
-  _.each(repositories, function(v, k) {
-    var info = getRepositoryInfo(k);
-    el.append($('<option></option>').text(info).attr('value', k));
+  _.each(repositories, function(repository) {
+    var info = getRepositoryInfo(repository);
+    el.append($('<option></option>').text(info).attr('value', repository.name));
   });
 }
 
@@ -133,8 +135,8 @@ function goToStep2(e) {
   $('#transplant-step-1').addClass('hidden');
   $('#transplant-step-2').removeClass('hidden');
 
-  var srcInfo = getRepositoryInfo(currentSrc);
-  var dstInfo = getRepositoryInfo(currentDst);
+  var srcInfo = getRepositoryInfo(getRepository(currentSrc));
+  var dstInfo = getRepositoryInfo(getRepository(currentDst));
 
   $('#step-2-src').text(srcInfo);
   $('#step-2-dst').text(dstInfo);
@@ -310,8 +312,11 @@ function parseRevsets(rawRevsets) {
   return revsets;
 }
 
-function getRepositoryInfo(name) {
-  var path = REPOSITORIES[name];
-  var info = name + ' (' + path + ')';
+function getRepository(name) {
+  return _.findWhere(REPOSITORIES, {name: name});
+}
+
+function getRepositoryInfo(repository) {
+  var info = repository.name + ' (' + repository.path + ')';
   return info;
 }

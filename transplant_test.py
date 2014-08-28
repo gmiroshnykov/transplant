@@ -4,7 +4,6 @@ import tempfile
 import shutil
 import json
 import fnmatch
-from hgapi.hgapi import Repo, HgException
 from repository import Repository, MercurialException
 
 import transplant

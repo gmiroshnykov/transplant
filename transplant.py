@@ -25,11 +25,26 @@ if not os.path.exists(app.config['WORKDIR']):
 def is_allowed_transplant(src, dst):
     return src != dst
 
-def has_repo(repo):
-    return repo in app.config['REPOSITORIES']
+def find_repo(name):
+    for repository in app.config['REPOSITORIES']:
+        if repository['name'] == name:
+            return repository
+
+    return None
+
+def has_repo(name):
+    repository = find_repo(name)
+    if repository is None:
+        return False
+
+    return True
 
 def get_repo_url(name):
-    return app.config['REPOSITORIES'][name]
+    repository = find_repo(name)
+    if repository is None:
+        return None
+
+    return repository['path']
 
 def get_repo_dir(name):
     return os.path.abspath(os.path.join(app.config['WORKDIR'], name))
