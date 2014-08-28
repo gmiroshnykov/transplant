@@ -23,13 +23,7 @@ if not os.path.exists(app.config['WORKDIR']):
 
 
 def is_allowed_transplant(src, dst):
-    if src not in app.config['RULES']:
-        return False
-
-    if dst not in app.config['RULES'][src]:
-        return False
-
-    return True
+    return src != dst
 
 def has_repo(repo):
     return repo in app.config['REPOSITORIES']
@@ -168,9 +162,8 @@ def too_many_commits_error(commits_count):
 
 @app.route('/')
 def index():
-    rules = app.config['RULES']
     repositories = app.config['REPOSITORIES']
-    return render_template('index.html', rules=rules, repositories=repositories)
+    return render_template('index.html', repositories=repositories)
 
 @app.route('/repositories/<repository_id>/commits/')
 def show_commits(repository_id):

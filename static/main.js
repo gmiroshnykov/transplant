@@ -6,7 +6,7 @@ var currentRevset = null;
 var currentCommits = [];
 
 $(function() {
-  populateRepositories('source', Object.keys(RULES));
+  populateRepositories('source', REPOSITORIES);
   $('#source').change(populateDestionations);
   $('#source').change(refreshCommitInfo);
   $('#source').change(uiRevset);
@@ -20,16 +20,16 @@ $(function() {
 
 function populateDestionations() {
   var source = $('#source').val();
-  var destionations = RULES[source] || [];
+  var destionations = _.omit(REPOSITORIES, source);
   populateRepositories('destination', destionations);
 }
 
 function populateRepositories(id, repositories) {
   $('#' + id + ' option:gt(0)').remove();
   var el = $('#' + id);
-  repositories.forEach(function(name) {
-    var info = getRepositoryInfo(name);
-    el.append($('<option></option>').text(info).attr('value', name));
+  _.each(repositories, function(v, k) {
+    var info = getRepositoryInfo(k);
+    el.append($('<option></option>').text(info).attr('value', k));
   });
 }
 
