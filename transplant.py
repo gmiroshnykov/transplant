@@ -3,7 +3,7 @@ import time
 import fnmatch
 import logging
 import json
-from flask import Flask, request, redirect, jsonify, render_template
+from flask import Flask, Response, request, redirect, jsonify, render_template, make_response
 from repository import Repository, MercurialException
 
 logging.basicConfig(level=logging.INFO)
@@ -233,8 +233,14 @@ def too_many_commits_error(current, limit):
 
 @app.route('/')
 def flask_index():
-    repositories = app.config['REPOSITORIES']
-    return render_template('index.html', repositories=repositories)
+    return app.send_static_file('index.html')
+
+@app.route('/config.js')
+def flask_config_js():
+    config_js = render_template('config.js.j2', repositories=app.config['REPOSITORIES'])
+    response = make_response(config_js)
+    response.headers["Content-Type"] = "application/javascript"
+    return response
 
 @app.route('/repositories/<repository_id>/revsets')
 def flask_get_revsets(repository_id):
