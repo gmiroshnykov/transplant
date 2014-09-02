@@ -9,6 +9,7 @@ def mkdirp(fullpath):
 
 class Repository(object):
     cmd = "hg"
+    registered_extensions = {}
 
     def __init__(self, path):
         self._path = path
@@ -20,11 +21,15 @@ class Repository(object):
         return p.returncode, stdout, stderr
 
     @classmethod
+    def register_extension(cls, name, path):
+        cls.registered_extensions[name] = path
+
+    @classmethod
     def command(cls, args, extensions=None, **kwargs):
         cmd = [cls.cmd]
-        if extensions is not None:
-            for extension in extensions:
-                cmd.extend(['--config', 'extensions.{}='.format(extension)])
+
+        extensions_config = cls._get_extensions_config(extensions)
+        cmd.extend(extensions_config)
 
         cmd.extend(args)
         returncode, stdout, stderr = cls.unsafe_command(cmd, **kwargs)
@@ -32,6 +37,22 @@ class Repository(object):
             raise MercurialException(cmd, returncode, stdout, stderr)
 
         return stdout
+
+    @classmethod
+    def _get_extensions_config(cls, extensions):
+        if extensions is None:
+            return []
+
+        extensions_config = []
+        for extension in extensions:
+            if extension in cls.registered_extensions:
+                path = cls.registered_extensions[extension]
+            else:
+                path = ""
+
+            extensions_config.extend(['--config', 'extensions.{}={}'.format(extension, path)])
+
+        return extensions_config
 
     @classmethod
     def clone(cls, source, destination):
@@ -77,9 +98,11 @@ class Repository(object):
                 raise e
 
     def log(self, **kwargs):
-        results = []
         output = self.raw_log(style='xml', **kwargs)
+        if output == "":
+            return []
 
+        results = []
         root = ET.fromstring(output)
         for logentry in root.iter('logentry'):
             node = logentry.get('node')
@@ -109,7 +132,7 @@ class Repository(object):
 
         return self.local_command(cmd, **kwargs)
 
-    def transplant(self, rev, source=None, filter=None, **kwargs):
+    def transplant(self, revset, source=None, filter=None, **kwargs):
         cmd = ['transplant']
 
         if source:
@@ -118,7 +141,11 @@ class Repository(object):
         if filter:
             cmd.extend(['--filter', filter])
 
-        cmd.append(rev)
+        if isinstance(revset, list):
+            cmd.extend(revset)
+        else:
+            cmd.append(revset)
+
         return self.local_command(cmd, extensions=['transplant'], **kwargs)
 
     def commit(self, message, addremove=False):
@@ -157,6 +184,18 @@ class Repository(object):
 
         return self.local_command(cmd, extensions=['strip'])
 
+    def collapse(self, rev, message=None):
+        cmd = ['collapse', '--rev', rev]
+
+        env = os.environ.copy()
+        if message is None:
+            env['EDITOR'] = 'true'
+        else:
+            message = "Squashed commits: {}".format(rev)
+            cmd.extend(['--message', message])
+
+        return self.local_command(cmd, env=env)
+
 
 class MercurialException(Exception):
     def __init__(self, cmd, returncode, stdout, stderr):
@@ -173,12 +212,12 @@ class MercurialException(Exception):
             "stderr: {}\n").format(command, self.returncode, self.stdout, self.stderr)
 
 if __name__ == '__main__':
-    # cmd = ['env']
-    # Repository.command(cmd)
+    Repository.register_extension('collapse', os.path.join('vendor', 'hgext', 'collapse.py'))
     #repository = Repository.clone("ssh://hg@bitbucket.org/laggyluke/transplant-src", "/tmp/transplant-src")
-    #repository = Repository("/tmp/transplant-src")
-    repository = Repository.init("/tmp/transplant-src")
-    print repository
+    repository = Repository("/tmp/transplant-src")
+    repository.collapse(rev='17:', message="Transplanted and Squashed")
+    # repository = Repository.init("/tmp/transplant-src")
+    #print repository
     #log = repository.log(rev="254bb399a5e7")
     #print log
     #repository.transplant('254bb399a5e7', source="ssh://hg@bitbucket.org/laggyluke/transplant-src")
