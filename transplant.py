@@ -207,7 +207,7 @@ def show_commits(repository_id):
 def transplant():
     params = request.get_json()
     if not params:
-        return jsonify({'error': 'No src'}), 400
+        return jsonify({'error': 'No params'}), 400
 
     src = params.get('src')
     dst = params.get('dst')
