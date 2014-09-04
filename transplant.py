@@ -16,7 +16,7 @@ MAX_COMMITS = 100
 
 Repository.register_extension('collapse', os.path.join(PROJECT_DIR, 'vendor', 'hgext', 'collapse.py'))
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='client/build', static_url_path='')
 app.config.from_object('config')
 
 # make sure that WORKDIR exists
