@@ -2,7 +2,8 @@
  * @jsx React.DOM
  */
 
-var _ = require('underscore');
+var React = require('react'),
+    _ = require('underscore');
 
 var RepositoriesListField = React.createClass({
   handleChange: function(e) {

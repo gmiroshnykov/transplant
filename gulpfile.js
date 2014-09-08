@@ -12,38 +12,36 @@ var paths = {
   statics: 'client/static/**/*',
 };
 
-function handleErrors() {
-  console.log(arguments);
+function handleErrors(error) {
+  console.error('Error:', error.message);
   this.emit('end'); // Keep gulp from hanging on this task
 }
 
 function scripts(watch) {
-  var bundler = browserify({
-    entries: [paths.script],
-    cache: {},
-    packageCache: {},
-    fullPaths: true,
-    debug: true
-  });
-
   if (watch) {
-    bundler = watchify(bundler);
+    var bundler = watchify(browserify(paths.script, watchify.args));
+  } else {
+    var bundler = browserify(paths.script);
   }
 
   bundler.transform(reactify);
+
   function rebundle() {
-    var stream = bundler.bundle();
-    return stream.on('error', handleErrors)
+    return bundler.bundle()
+      .on('error', handleErrors)
       .pipe(source('bundle.js'))
       .pipe(gulp.dest(paths.build));
   }
+
   bundler.on('update', function() {
     gutil.log('Browserify: rebundling...');
     rebundle();
   });
+
   bundler.on('log', function(msg) {
     gutil.log('Browserify: ' + msg);
   });
+
   return rebundle();
 }
 

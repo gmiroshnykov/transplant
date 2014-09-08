@@ -2,11 +2,19 @@
  * @jsx React.DOM
  */
 
-var TransplantForm = require('./TransplantForm');
+var React = require('react');
+var TransplantForm = require('./TransplantForm'),
+    TransplantRevsets = require('./TransplantRevsets');
 
 var TransplantApp = React.createClass({
-  handleSubmit: function(data) {
-    console.log('submit:', data);
+  getInitialState: function() {
+    return {
+      revsets: []
+    };
+  },
+
+  handleAddRevset: function(revset) {
+    console.log('handleAddRevset:', revset);
   },
 
   render: function() {
@@ -15,7 +23,9 @@ var TransplantApp = React.createClass({
         <h1>Transplant</h1>
         <TransplantForm
           repositories={this.props.repositories}
-          onSubmit={this.handleSubmit} />
+          onAddRevset={this.handleAddRevset} />
+        <TransplantRevsets
+          revsets={this.state.revsets} />
       </div>
     );
   }

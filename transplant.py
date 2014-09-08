@@ -113,7 +113,6 @@ def get_revset_info(repository, revset):
         raise TooManyCommitsError(msg)
 
     return {
-        "revset": revset,
         "commits": commits
     }
 
@@ -242,16 +241,15 @@ def flask_config_js():
     response.headers["Content-Type"] = "application/javascript"
     return response
 
-@app.route('/repositories/<repository_id>/revsets')
-def flask_get_revsets(repository_id):
-    revsets = request.values.get('revsets')
-    if not revsets:
-        return jsonify({'error': 'No revsets'}), 400
-    revsets = json.loads(revsets)
+@app.route('/repositories/<repository_id>/lookup')
+def flask_lookup(repository_id):
+    revset = request.values.get('revset')
+    if not revset:
+        return jsonify({'error': 'No revset'}), 400
 
     repository = clone_or_pull(repository_id)
     try:
-        revsets_info = get_revsets_info(repository, revsets)
+        revset_info = get_revset_info(repository, revset)
     except TooManyCommitsError, e:
         return jsonify({
             'error': e.message
@@ -262,7 +260,7 @@ def flask_get_revsets(repository_id):
         }), 400
 
     return jsonify({
-        'revsets': revsets_info
+        'revset': revset_info
     })
 
 @app.route('/transplant', methods = ['POST'])
