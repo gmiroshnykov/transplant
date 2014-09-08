@@ -155,8 +155,7 @@ def transplant(src, dst, items):
             return jsonify({'tip': tip})
 
         finally:
-            #cleanup(dst_repo)
-            pass
+            cleanup(dst_repo)
 
     except MercurialException, e:
         print e

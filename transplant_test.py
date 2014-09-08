@@ -28,22 +28,17 @@ class TransplantTestCase(unittest.TestCase):
         self.dst.pull(self.src_dir, update=True)
 
     def configure_app(self):
-        transplant.app.config['REPOSITORIES'] = {
-            'test-src': self.src_dir,
-            'test-dst': self.dst_dir,
-        }
-
-        transplant.app.config['RULES'] = {
-            'test-src': ['test-dst']
-        }
+        transplant.app.config['REPOSITORIES'] = [{
+            'name': 'test-src',
+            'path': self.src_dir
+        }, {
+            'name': 'test-dst',
+            'path': self.dst_dir
+        }]
 
         transplant.app.config['WORKDIR'] = self.workdir
 
     def tearDown(self):
-        print "src_dir: " + self.src_dir
-        print "dst_dir: " + self.dst_dir
-        print "workdir: " + self.workdir
-
         if transplant.app.debug:
             print "src_dir: " + self.src_dir
             print "dst_dir: " + self.dst_dir
@@ -63,17 +58,17 @@ class TransplantTestCase(unittest.TestCase):
         with open(test_file, 'r') as f:
             return f.read()
 
-    def test_happy_path(self):
+    def test_transplant_single_commit(self):
         self._set_test_file_content(self.src_dir, "Goodbye World!\n")
         self.src.commit("Goodbye World!")
         commit = {
-            "id": self.src.id(id=True)
+            "commit": self.src.id(id=True)
         }
 
         result = self.app.post('/transplant', data=json.dumps({
             'src': 'test-src',
             'dst': 'test-dst',
-            'commits': [commit]
+            'items': [commit]
         }), content_type='application/json')
 
         assert result.status_code == 200
@@ -86,19 +81,52 @@ class TransplantTestCase(unittest.TestCase):
         content = self._get_test_file_content(self.dst_dir)
         assert content == "Goodbye World!\n"
 
+    def test_transplant_squashed(self):
+        content = "Goodbye World!\n"
+        self._set_test_file_content(self.src_dir, content)
+        self.src.commit("Goodbye World!")
+        commit_id_1 = self.src.id(id=True)
+
+        content += "Hello Again!\n"
+        self._set_test_file_content(self.src_dir, content)
+        self.src.commit("Hello Again!\n")
+        commit_id_2 = self.src.id(id=True)
+
+        result = self.app.post('/transplant', data=json.dumps({
+            'src': 'test-src',
+            'dst': 'test-dst',
+            'items': [{
+                'revset': '{}::{}'.format(commit_id_1, commit_id_2)
+            }]
+        }), content_type='application/json')
+
+        assert result.status_code == 200
+
+        data = json.loads(result.data)
+        assert 'tip' in data
+
+        self.dst.update()
+
+        actual_content = self._get_test_file_content(self.dst_dir)
+        assert actual_content == content
+
+        commit_info = self.dst.log(rev='tip')[0]
+        assert "Goodbye World!" in commit_info['message']
+        assert "Hello Again!" in commit_info['message']
+
     def test_change_messsage(self):
         self._set_test_file_content(self.src_dir, "Goodbye World!\n")
         self.src.commit("Goodbye World!")
 
         commit = {
-            "id": self.src.id(id=True),
+            "commit": self.src.id(id=True),
             "message": "Goodbye World! a=me"
         }
 
         result = self.app.post('/transplant', data=json.dumps({
             'src': 'test-src',
             'dst': 'test-dst',
-            'commits': [commit]
+            'items': [commit]
         }), content_type='application/json')
 
         assert result.status_code == 200
@@ -126,13 +154,13 @@ class TransplantTestCase(unittest.TestCase):
         self.src.commit("Hello again!")
 
         commit = {
-            "id": self.src.id(id=True)
+            "commit": self.src.id(id=True)
         }
 
         result = self.app.post('/transplant', data=json.dumps({
             'src': 'test-src',
             'dst': 'test-dst',
-            'commits': [commit]
+            'items': [commit]
         }), content_type='application/json')
 
         assert result.status_code == 409
