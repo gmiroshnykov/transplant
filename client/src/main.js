@@ -3,7 +3,7 @@
  */
 
 var React = require('react');
-var TransplantApp = require('./TransplantApp');
+var TransplantApp = require('./components/TransplantApp');
 
 React.renderComponent(
   <TransplantApp repositories={REPOSITORIES} />,

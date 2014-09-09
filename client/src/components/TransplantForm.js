@@ -5,40 +5,41 @@
 var React = require('react'),
     _ = require('underscore');
 
-var Api = require('./api');
+var Api = require('../api');
 
 var RepositoriesListField = require('./RepositoriesListField'),
     RevsetField = require('./RevsetField'),
     Alerts = require('./Alerts');
 
 var TransplantForm = React.createClass({
-  lastAlertId: 0,
-
   getInitialState: function() {
     return {
-      sourceRepository: '',
-      targetRepository: '',
+      sourceRepository: 'transplant-src',
+      targetRepository: 'transplant-dst',
       addInProgress: false,
-      alerts: {},
-      revsets: []
+      alerts: {}
     };
   },
 
   handleChangeSourceRepository: function(sourceRepository) {
-    console.log('handleChangeSourceRepository:', sourceRepository);
+    //console.log('handleChangeSourceRepository:', sourceRepository);
     this.setState({sourceRepository: sourceRepository});
   },
 
   handleChangeTargetRepository: function(targetRepository) {
-    console.log('handleChangeTargetRepository:', targetRepository);
+    //console.log('handleChangeTargetRepository:', targetRepository);
     this.setState({targetRepository: targetRepository});
   },
 
   handleAddRevset: function(revset) {
-    console.log('handleAddRevset:', revset);
-
     var sourceRepository = this.state.sourceRepository;
     if (!sourceRepository || !revset) {
+      return;
+    }
+
+    var existingRevset = _.findWhere(this.props.revsets, {revset: revset});
+    if (existingRevset) {
+      this.alertAdd('danger', "Revset '" + revset + "' already added", 'error_already_added');
       return;
     }
 
@@ -53,14 +54,14 @@ var TransplantForm = React.createClass({
         return;
       }
 
-      console.log(self.props.children);
-
-      console.log(result);
-      self.alertAdd('success', 'Yay!', 'success');
       self.refs.revsetField.reset();
-      //this.props.onAddRevset(revset);
+
+      result.revset.revset = revset;
+      self.props.onAddRevset(result.revset);
     });
   },
+
+  lastAlertId: 0,
 
   alertAdd: function(type, message, id) {
     id = id || this.lastAlertId++;
@@ -120,14 +121,3 @@ var TransplantForm = React.createClass({
 });
 
 module.exports = TransplantForm;
-
-
-var LAST_ALERT_ID = 0;
-
-function createAlert(type, message) {
-  return {
-    id: LAST_ALERT_ID++,
-    type: type,
-    message: message
-  };
-}

@@ -32,8 +32,8 @@ var RevsetField = React.createClass({
   },
 
   reset: function() {
+    this.setState({value: ''});
     var node = this.refs.revset.getDOMNode();
-    node.value = '';
     node.focus();
   },
 
