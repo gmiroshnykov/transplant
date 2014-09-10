@@ -16,7 +16,16 @@ Installation
 ------------
 
 1. Run `pip install -r requirements.txt`
-2. Run `python transplant.py`
+3. Run `npm install`
+2. Run `npm run bower-install`
+
+
+Usage
+-----
+
+1. Run `python transplant.py`
+2. Run `gulp`
+3. Open [http://localhost:5000](http://localhost:5000/).
 
 
 Testing
