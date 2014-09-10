@@ -10,41 +10,10 @@ var TransplantForm = require('./TransplantForm');
 var TransplantApp = React.createClass({
   getInitialState: function() {
     return {
-      revsets: [{
-        revset: 'tip',
-        squash: false,
-        squashedMessage: null,
-        commits: [{
-          node: 'deadbeaf1',
-          date: null,
-          message: 'Hello World!',
-          author: 'George Miroshnykov',
-          author_email: 'gmiroshnykov@mozilla.com'
-        }, {
-          node: 'deadbeaf2',
-          date: null,
-          message: 'Hello World!',
-          author: null,
-          author_email: null
-        }]
-      }, {
-        revset: 'top',
-        squash: true,
-        squashedMessage: null,
-        commits: [{
-          node: 'deadbeaf1',
-          date: null,
-          message: 'Hello World!',
-          author: null,
-          author_email: null
-        }, {
-          node: 'deadbeaf2',
-          date: null,
-          message: 'Hello World!',
-          author: null,
-          author_email: null
-        }]
-      }]
+      revsets: [],
+      translpantInProgress: false,
+      result: null,
+      done: false
     };
   },
 
@@ -101,6 +70,35 @@ var TransplantApp = React.createClass({
     this.forceUpdate();
   },
 
+  handleTransplant: function() {
+    this.setState({
+      translpantInProgress: true,
+      result: null,
+      done: false
+    });
+
+    var self = this;
+    setTimeout(function() {
+      self.setState({
+        translpantInProgress: false,
+        result: {
+          alert: 'success',
+          message: 'Done'
+        },
+        done: true
+      });
+    }, 3000);
+  },
+
+  handleReset: function() {
+    this.setState({
+      revsets: [],
+      translpantInProgress: false,
+      result: null,
+      done: false
+    });
+  },
+
   render: function() {
     return (
       <div className="transplantApp clearfix">
@@ -115,21 +113,61 @@ var TransplantApp = React.createClass({
           onChangeCommit={this.handleChangeCommit}
           onChangeSquashedMessage={this.handleChangeSquashedMessage}
           onDelete={this.handleDeleteRevset} />
-        {this.renderSubmit()}
+        <div>
+          {this.renderResult()}
+          {this.renderButton()}
+        </div>
       </div>
     );
   },
 
-  renderSubmit: function() {
+  renderButton: function() {
+    return !this.state.done
+      ? this.renderTransplantButton()
+      : this.renderResetButton()
+  },
+
+  renderTransplantButton: function() {
     if (this.state.revsets.length < 1) {
       return;
     }
 
+    var translpantInProgress = this.state.translpantInProgress;
+    var disabled = translpantInProgress;
+    var text = 'Transplant';
+    if (translpantInProgress) {
+      text = 'Transplanting...';
+    }
+
     return (
-      <input type="submit" value="Transplant"
-        className="btn btn-primary btn-lg pull-right" />
+      <button type="button"
+        disabled={disabled}
+        onClick={this.handleTransplant}
+        className="btn btn-primary btn-lg col-md-2 pull-right">{text}</button>
     );
-  }
+  },
+
+  renderResetButton: function() {
+    return (
+      <button type="button"
+        onClick={this.handleReset}
+        className="btn btn-warning btn-lg col-md-2 pull-right">Reset</button>
+    )
+  },
+
+  renderResult: function() {
+    var result = this.state.result;
+    if (!result) {
+      return;
+    }
+
+    var classes = ['alert', 'pull-left'];
+    classes.push('alert-' + result.alert);
+
+    return (
+      <div className={classes.join(' ')} role="alert">{result.message}</div>
+    );
+  },
 });
 
 module.exports = TransplantApp;

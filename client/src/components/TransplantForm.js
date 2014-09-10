@@ -14,8 +14,8 @@ var RepositoriesListField = require('./RepositoriesListField'),
 var TransplantForm = React.createClass({
   getInitialState: function() {
     return {
-      sourceRepository: 'transplant-src',
-      targetRepository: 'transplant-dst',
+      sourceRepository: null,
+      targetRepository: null,
       addInProgress: false,
       alerts: {}
     };
