@@ -4,7 +4,7 @@
 
 var React = require('react'),
     _ = require('underscore');
-var TransplantRevset = require('./TransplantRevset');
+var TransplantRevset = require('./TransplantRevset.jsx');
 
 var TransplantRevsets = React.createClass({
   render: function() {

@@ -6,14 +6,14 @@ var React = require('react'),
     _ = require('underscore');
 
 var RepositoriesListField = React.createClass({
-  handleChange: function(e) {
+  handleChange(e) {
     e.preventDefault();
 
     var repository = e.target.value;
     this.props.onChange(repository);
   },
 
-  render: function() {
+  render() {
     var repositories = [<option key="" value=""></option>];
     _.each(this.props.repositories, function(repository) {
       repositories.push(<option key={repository.name}

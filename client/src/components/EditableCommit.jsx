@@ -7,14 +7,14 @@ var React = require('react');
 var UNKNOWN = '<unknown>';
 
 var EditableCommit = React.createClass({
-  handleChangeMessage: function(e) {
+  handleChangeMessage(e) {
     var message = e.target.value;
     var commit = this.props.commit;
     commit.message = message;
     this.props.onChange(commit);
   },
 
-  render: function() {
+  render() {
     var commit = this.props.commit;
     var author = [commit.author];
     if (commit.author_email) {
@@ -57,11 +57,11 @@ var EditableCommit = React.createClass({
     );
   },
 
-  renderLabel: function(text) {
+  renderLabel(text) {
     return <label className="control-label col-sm-1">{text}</label>;
   },
 
-  renderStatic: function(text) {
+  renderStatic(text) {
     return <p className="form-control-static col-sm-11">{text}</p>;
   }
 });

@@ -7,12 +7,12 @@ var React = require('react'),
 
 var Api = require('../api');
 
-var RepositoriesListField = require('./RepositoriesListField'),
-    RevsetField = require('./RevsetField'),
-    Alerts = require('./Alerts');
+var RepositoriesListField = require('./RepositoriesListField.jsx'),
+    RevsetField = require('./RevsetField.jsx'),
+    Alerts = require('./Alerts.jsx');
 
 var TransplantForm = React.createClass({
-  getInitialState: function() {
+  getInitialState() {
     return {
       sourceRepository: null,
       targetRepository: null,
@@ -21,17 +21,17 @@ var TransplantForm = React.createClass({
     };
   },
 
-  handleChangeSourceRepository: function(sourceRepository) {
+  handleChangeSourceRepository(sourceRepository) {
     //console.log('handleChangeSourceRepository:', sourceRepository);
     this.setState({sourceRepository: sourceRepository});
   },
 
-  handleChangeTargetRepository: function(targetRepository) {
+  handleChangeTargetRepository(targetRepository) {
     //console.log('handleChangeTargetRepository:', targetRepository);
     this.setState({targetRepository: targetRepository});
   },
 
-  handleAddRevset: function(revset) {
+  handleAddRevset(revset) {
     var sourceRepository = this.state.sourceRepository;
     if (!sourceRepository || !revset) {
       return;
@@ -45,25 +45,24 @@ var TransplantForm = React.createClass({
 
     this.setState({addInProgress: true});
 
-    var self = this;
-    return Api.lookup(sourceRepository, revset, function(err, result) {
-      self.setState({addInProgress: false});
+    return Api.lookup(sourceRepository, revset, (err, result) => {
+      this.setState({addInProgress: false});
 
       if (err) {
-        self.alertAdd('danger', err.message, 'error');
+        this.alertAdd('danger', err.message, 'error');
         return;
       }
 
-      self.refs.revsetField.reset();
+      this.refs.revsetField.reset();
 
       result.revset.revset = revset;
-      self.props.onAddRevset(result.revset);
+      this.props.onAddRevset(result.revset);
     });
   },
 
   lastAlertId: 0,
 
-  alertAdd: function(type, message, id) {
+  alertAdd(type, message, id) {
     id = id || this.lastAlertId++;
 
     var alerts = this.state.alerts;
@@ -74,13 +73,13 @@ var TransplantForm = React.createClass({
     this.setState({alerts: alerts});
   },
 
-  alertRemove: function(id) {
+  alertRemove(id) {
     var alerts = this.state.alerts;
     delete alerts[id];
     this.setState({alerts: alerts});
   },
 
-  render: function() {
+  render() {
     var sourceRepository = this.state.sourceRepository;
     var targetRepository = this.state.targetRepository;
 

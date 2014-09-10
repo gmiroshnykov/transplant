@@ -3,11 +3,14 @@ var gulp = require('gulp'),
     source = require('vinyl-source-stream'),
     browserify = require('browserify'),
     watchify = require('watchify'),
-    reactify = require('reactify');
+    reactify = require('reactify'),
+    es6ify = require('es6ify');
+
+// es6ify.traceurOverrides = {experimental: true};
 
 var paths = {
   build: 'client/build',
-  script: __dirname + '/client/src/main.js',
+  script: __dirname + '/client/src/app.jsx',
   scripts: __dirname + '/client/src/**/*',
   statics: 'client/static/**/*',
 };
@@ -25,6 +28,7 @@ function scripts(watch) {
   }
 
   bundler.transform(reactify);
+  bundler.transform(es6ify.configure(/.jsx/));
 
   function rebundle() {
     return bundler.bundle()

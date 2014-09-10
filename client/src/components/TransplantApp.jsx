@@ -4,11 +4,11 @@
 
 var React = require('react'),
     _ = require('underscore');
-var TransplantForm = require('./TransplantForm');
-    TransplantRevsets = require('./TransplantRevsets');
+var TransplantForm = require('./TransplantForm.jsx'),
+    TransplantRevsets = require('./TransplantRevsets.jsx');
 
 var TransplantApp = React.createClass({
-  getInitialState: function() {
+  getInitialState() {
     return {
       revsets: [],
       translpantInProgress: false,
@@ -17,7 +17,7 @@ var TransplantApp = React.createClass({
     };
   },
 
-  handleAddRevset: function(revset) {
+  handleAddRevset(revset) {
     revset.squash = false;
     revset.squashedMessage = null;
 
@@ -25,12 +25,12 @@ var TransplantApp = React.createClass({
     this.forceUpdate();
   },
 
-  handleDeleteRevset: function(revsetId) {
+  handleDeleteRevset(revsetId) {
     this.state.revsets = _.reject(this.state.revsets, _.matches({revset: revsetId}));
     this.forceUpdate();
   },
 
-  handleChangeSquash: function(revsetId, flag) {
+  handleChangeSquash(revsetId, flag) {
     var revset = _.findWhere(this.state.revsets, {revset: revsetId});
     if (!revset) {
       return;
@@ -40,7 +40,7 @@ var TransplantApp = React.createClass({
     this.forceUpdate();
   },
 
-  handleChangeSquashedMessage: function(revsetId, squashedMessage) {
+  handleChangeSquashedMessage(revsetId, squashedMessage) {
     var revset = _.findWhere(this.state.revsets, {revset: revsetId});
     if (!revset) {
       return;
@@ -50,7 +50,7 @@ var TransplantApp = React.createClass({
     this.forceUpdate();
   },
 
-  handleChangeCommit: function(revsetId, commitId, newCommit) {
+  handleChangeCommit(revsetId, commitId, newCommit) {
     var revset = _.findWhere(this.state.revsets, {revset: revsetId});
     if (!revset) {
       return;
@@ -70,16 +70,15 @@ var TransplantApp = React.createClass({
     this.forceUpdate();
   },
 
-  handleTransplant: function() {
+  handleTransplant() {
     this.setState({
       translpantInProgress: true,
       result: null,
       done: false
     });
 
-    var self = this;
-    setTimeout(function() {
-      self.setState({
+    setTimeout(() => {
+      this.setState({
         translpantInProgress: false,
         result: {
           alert: 'success',
@@ -90,7 +89,7 @@ var TransplantApp = React.createClass({
     }, 3000);
   },
 
-  handleReset: function() {
+  handleReset() {
     this.setState({
       revsets: [],
       translpantInProgress: false,
@@ -99,7 +98,7 @@ var TransplantApp = React.createClass({
     });
   },
 
-  render: function() {
+  render() {
     return (
       <div className="transplantApp clearfix">
         <h1>Transplant</h1>
@@ -121,13 +120,13 @@ var TransplantApp = React.createClass({
     );
   },
 
-  renderButton: function() {
+  renderButton() {
     return !this.state.done
       ? this.renderTransplantButton()
       : this.renderResetButton()
   },
 
-  renderTransplantButton: function() {
+  renderTransplantButton() {
     if (this.state.revsets.length < 1) {
       return;
     }
@@ -147,7 +146,7 @@ var TransplantApp = React.createClass({
     );
   },
 
-  renderResetButton: function() {
+  renderResetButton() {
     return (
       <button type="button"
         onClick={this.handleReset}
@@ -155,7 +154,7 @@ var TransplantApp = React.createClass({
     )
   },
 
-  renderResult: function() {
+  renderResult() {
     var result = this.state.result;
     if (!result) {
       return;

@@ -5,25 +5,25 @@
 var React = require('react')
 
 var RevsetField = React.createClass({
-  getInitialState: function() {
+  getInitialState() {
     return {
       value: ''
     };
   },
 
-  handleKeyDown: function(e) {
+  handleKeyDown(e) {
     if (e.keyCode === 13) {
       e.preventDefault();
       this.handleAdd();
     }
   },
 
-  handleChange: function(e) {
+  handleChange(e) {
     var value = e.target.value.trim();
     this.setState({value: value});
   },
 
-  handleAdd: function() {
+  handleAdd() {
     if (this.state.value === '') {
       return;
     }
@@ -31,13 +31,13 @@ var RevsetField = React.createClass({
     this.props.onAdd(this.state.value);
   },
 
-  reset: function() {
+  reset() {
     this.setState({value: ''});
     var node = this.refs.revset.getDOMNode();
     node.focus();
   },
 
-  render: function() {
+  render() {
     var buttonText = 'Add';
 
     var canAdd = this.props.canAdd;

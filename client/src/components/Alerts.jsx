@@ -5,21 +5,20 @@
 var React = require('react'),
     _ = require('underscore');
 
-var Alert = require('./Alert');
+var Alert = require('./Alert.jsx');
 
 var Alerts = React.createClass({
-  handleAlertClose: function(id) {
+  handleAlertClose(id) {
     this.props.onAlertClose(id);
   },
 
-  render: function() {
-    var self = this;
-    var alerts = _.map(this.props.items, function(item, id) {
+  render() {
+    var alerts = _.map(this.props.items, (item, id) => {
       return <Alert
           key={id}
           type={item.type}
           message={item.message}
-          onClose={self.handleAlertClose.bind(self, id)} />
+          onClose={_.partial(this.handleAlertClose, id)} />
     });
 
     return (

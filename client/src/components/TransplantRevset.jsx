@@ -4,26 +4,26 @@
 
 var React = require('react'),
     _ = require('underscore');
-var EditableCommit = require('./EditableCommit');
+var EditableCommit = require('./EditableCommit.jsx');
 
 var SQUASH_SEPARATOR = "\n----------------\n";
 
 var TransplantRevset = React.createClass({
-  generateSquashedMessage: function() {
+  generateSquashedMessage() {
     return _.pluck(this.props.revset.commits, 'message').join(SQUASH_SEPARATOR);
   },
 
-  handleChangeSquash: function(e) {
+  handleChangeSquash(e) {
     var flag = e.target.checked;
     this.props.onChangeSquash(flag);
   },
 
-  handleChangeSquashedMessage: function(e) {
+  handleChangeSquashedMessage(e) {
     var squashedMessage = e.target.value;
     this.props.onChangeSquashedMessage(squashedMessage);
   },
 
-  render: function() {
+  render() {
     var revset = this.props.revset;
     var commitsCount = revset.commits.length;
 
@@ -46,7 +46,7 @@ var TransplantRevset = React.createClass({
     );
   },
 
-  renderSquashCheckbox: function() {
+  renderSquashCheckbox() {
     var revset = this.props.revset;
     if (revset.commits.length < 2) {
       return;
@@ -63,7 +63,7 @@ var TransplantRevset = React.createClass({
     );
   },
 
-  renderSquashedForm: function() {
+  renderSquashedForm() {
     var squashedMessage = this.props.revset.squashedMessage;
     if (squashedMessage === null) {
       squashedMessage = this.generateSquashedMessage();
@@ -83,15 +83,14 @@ var TransplantRevset = React.createClass({
     );
   },
 
-  renderCommits: function() {
-    var self = this;
+  renderCommits() {
     var revset = this.props.revset;
-    return revset.commits.map(function(commit) {
+    return revset.commits.map((commit) => {
       return (
         <div key={commit.node} className="list-group-item">
           <EditableCommit
             commit={commit}
-            onChange={_.partial(self.props.onChangeCommit, commit.node)} />
+            onChange={_.partial(this.props.onChangeCommit, commit.node)} />
         </div>
       );
     });
