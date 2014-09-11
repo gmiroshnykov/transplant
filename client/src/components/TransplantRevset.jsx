@@ -9,6 +9,21 @@ var EditableCommit = require('./EditableCommit.jsx');
 var SQUASH_SEPARATOR = "\n----------------\n";
 
 var TransplantRevset = React.createClass({
+  propTypes: {
+    revset: React.PropTypes.shape({
+      revset: React.PropTypes.string.isRequired,
+      squash: React.PropTypes.bool.isRequired,
+      squashedMessage: React.PropTypes.string,
+      commits: React.PropTypes.arrayOf(
+        React.PropTypes.shape({
+          node: React.PropTypes.string.isRequired
+        })
+      ),
+    }),
+    onChangeSquash: React.PropTypes.func.isRequired,
+    onChangeSquashedMessage: React.PropTypes.func.isRequired
+  },
+
   generateSquashedMessage() {
     return _.pluck(this.props.revset.commits, 'message').join(SQUASH_SEPARATOR);
   },
@@ -84,16 +99,13 @@ var TransplantRevset = React.createClass({
   },
 
   renderCommits() {
-    var revset = this.props.revset;
-    return revset.commits.map((commit) => {
-      return (
-        <div key={commit.node} className="list-group-item">
-          <EditableCommit
-            commit={commit}
-            onChange={_.partial(this.props.onChangeCommit, commit.node)} />
-        </div>
-      );
-    });
+    return this.props.revset.commits.map(commit =>
+      <div key={commit.node} className="list-group-item">
+        <EditableCommit
+          commit={commit}
+          onChange={_.partial(this.props.onChangeCommit, commit.node)} />
+      </div>
+    );
   },
 });
 

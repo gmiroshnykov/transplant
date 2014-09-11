@@ -10,7 +10,7 @@ var gulp = require('gulp'),
 
 var paths = {
   build: 'client/build',
-  script: __dirname + '/client/src/app.jsx',
+  script: __dirname + '/client/src/app.js',
   scripts: __dirname + '/client/src/**/*',
   statics: 'client/static/**/*',
 };
@@ -28,7 +28,7 @@ function scripts(watch) {
   }
 
   bundler.transform(reactify);
-  bundler.transform(es6ify.configure(/.jsx/));
+  bundler.transform(es6ify.configure(/.jsx?/));
 
   function rebundle() {
     return bundler.bundle()

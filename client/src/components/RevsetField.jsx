@@ -5,6 +5,12 @@
 var React = require('react')
 
 var RevsetField = React.createClass({
+  propTypes: {
+    canAdd: React.PropTypes.bool.isRequired,
+    inProgress: React.PropTypes.bool.isRequired,
+    onAdd: React.PropTypes.func.isRequired
+  },
+
   getInitialState() {
     return {
       value: ''
@@ -19,7 +25,7 @@ var RevsetField = React.createClass({
   },
 
   handleChange(e) {
-    var value = e.target.value.trim();
+    var value = e.target.value;
     this.setState({value: value});
   },
 
@@ -28,7 +34,7 @@ var RevsetField = React.createClass({
       return;
     }
 
-    this.props.onAdd(this.state.value);
+    this.props.onAdd(this.state.value.trim());
   },
 
   reset() {
@@ -38,11 +44,11 @@ var RevsetField = React.createClass({
   },
 
   render() {
-    var buttonText = 'Add';
-
     var canAdd = this.props.canAdd;
-    var addInProgress = this.props.addInProgress;
-    if (addInProgress) {
+    var inProgress = this.props.inProgress;
+
+    var buttonText = 'Add';
+    if (inProgress) {
       buttonText = 'Adding...';
       canAdd = false;
     }

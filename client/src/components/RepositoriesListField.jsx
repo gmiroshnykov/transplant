@@ -6,6 +6,16 @@ var React = require('react'),
     _ = require('underscore');
 
 var RepositoriesListField = React.createClass({
+  propTypes: {
+    title: React.PropTypes.string.isRequired,
+    repositories: React.PropTypes.arrayOf(
+      React.PropTypes.shape({
+        name: React.PropTypes.string.isRequired,
+        path: React.PropTypes.string.isRequired
+      })
+    )
+  },
+
   handleChange(e) {
     e.preventDefault();
 

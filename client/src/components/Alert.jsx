@@ -5,26 +5,33 @@
 var React = require('react');
 
 var Alert = React.createClass({
-  handleClose() {
-    this.props.onClose(this.props.key);
+  propTypes: {
+    alert: React.PropTypes.shape({
+      id: React.PropTypes.string.isRequired,
+      type: React.PropTypes.string.isRequired,
+      message: React.PropTypes.renderable.isRequired,
+      dismissable: React.PropTypes.bool
+    })
   },
 
   render() {
+    var alert = this.props.alert;
+    var type = alert.type || 'info';
+    var dismissable = alert.dismissable || false;
+
+
     var classes = ['alert'];
-
-    var dismissable = this.props.dismissable;
-    if (dismissable) {
-      classes.push('alert-warning');
-    }
-
-    var type = this.props.type || 'info';
     classes.push('alert-' + type);
 
+    if (dismissable) {
+      classes.push('alert-dismissible');
+    }
+
     return (
-      <div ref="alert" role="alert" className={classes.join(' ')}>
+      <div role="alert" className={classes.join(' ')}>
         <button type="button" className="close"
-          onClick={this.handleClose}><span aria-hidden="true">&times;</span><span className="sr-only">Close</span></button>
-        {this.props.message}
+          onClick={this.props.onClose}><span aria-hidden="true">&times;</span><span className="sr-only">Close</span></button>
+        {alert.message}
       </div>
     );
   }

@@ -4,17 +4,30 @@
 
 var React = require('react'),
     _ = require('underscore');
+
+var Api = require('../api');
+
 var TransplantForm = require('./TransplantForm.jsx'),
     TransplantRevsets = require('./TransplantRevsets.jsx');
 
 var TransplantApp = React.createClass({
   getInitialState() {
     return {
+      sourceRepository: '',
+      targetRepository: '',
       revsets: [],
-      translpantInProgress: false,
-      result: null,
-      done: false
+      inProgressTranslant: false,
+      transplantResult: null,
+      transplantDone: false
     };
+  },
+
+  handleChangeSourceRepository(sourceRepository) {
+    this.setState({sourceRepository: sourceRepository});
+  },
+
+  handleChangeTargetRepository(targetRepository) {
+    this.setState({targetRepository: targetRepository});
   },
 
   handleAddRevset(revset) {
@@ -71,20 +84,83 @@ var TransplantApp = React.createClass({
   },
 
   handleTransplant() {
+    var source = this.state.sourceRepository;
+    var target = this.state.targetRepository;
+
+    var items = [];
+    var revsetsToProcess = [];
+
+    var revsets = this.state.revsets;
+    for (var revset of revsets) {
+      if (revset.squash) {
+        items.push({
+          revset: revset.revset,
+          message: revset.squashedMessage
+        });
+      } else {
+        for (var commit of revset.commits) {
+          items.push({
+            commit: commit.node,
+            message: commit.message
+          });
+        }
+      }
+    }
+
     this.setState({
-      translpantInProgress: true,
-      result: null,
-      done: false
+      inProgressTranslant: true,
+      transplantResult: null,
+      transplantDone: false
+    });
+
+    return Api.transplant(source, target, items, (err, result) => {
+      this.setState({inProgressTranslant: false})
+
+      if (err) {
+        var error = {message: err.message};
+        if (err.details) {
+          error.details =
+            "command: " + err.details.cmd.join(' ') + "\n" +
+            "returncode: " + err.details.returncode + "\n" +
+            "stdout: " + err.details.stdout + "\n" +
+            "stderr: " + err.details.stderr + "\n";
+        }
+
+        return this.setState({
+          transplantDone: false,
+          transplantResult: {
+            error: error
+          }
+        });
+      }
+
+      return this.setState({
+        transplantDone: true,
+        transplantResult: {
+          success: true,
+          message: 'Tip: ' + result.tip
+        }
+      });
+    });
+
+
+
+    return;
+
+    this.setState({
+      inProgressTranslant: true,
+      transplantResult: null,
+      transplantDone: false
     });
 
     setTimeout(() => {
       this.setState({
-        translpantInProgress: false,
-        result: {
+        inProgressTranslant: false,
+        transplantResult: {
           alert: 'success',
           message: 'Done'
         },
-        done: true
+        transplantDone: true
       });
     }, 3000);
   },
@@ -92,36 +168,14 @@ var TransplantApp = React.createClass({
   handleReset() {
     this.setState({
       revsets: [],
-      translpantInProgress: false,
-      result: null,
-      done: false
+      inProgressTranslant: false,
+      transplantResult: null,
+      transplantDone: false
     });
   },
 
-  render() {
-    return (
-      <div className="transplantApp clearfix">
-        <h1>Transplant</h1>
-        <TransplantForm
-          repositories={this.props.repositories}
-          revsets={this.state.revsets}
-          onAddRevset={this.handleAddRevset} />
-        <TransplantRevsets
-          revsets={this.state.revsets}
-          onChangeSquash={this.handleChangeSquash}
-          onChangeCommit={this.handleChangeCommit}
-          onChangeSquashedMessage={this.handleChangeSquashedMessage}
-          onDelete={this.handleDeleteRevset} />
-        <div>
-          {this.renderResult()}
-          {this.renderButton()}
-        </div>
-      </div>
-    );
-  },
-
   renderButton() {
-    return !this.state.done
+    return !this.state.transplantDone
       ? this.renderTransplantButton()
       : this.renderResetButton()
   },
@@ -131,10 +185,10 @@ var TransplantApp = React.createClass({
       return;
     }
 
-    var translpantInProgress = this.state.translpantInProgress;
-    var disabled = translpantInProgress;
+    var inPogress = this.state.inProgressTranslant;
+    var disabled = inPogress;
     var text = 'Transplant';
-    if (translpantInProgress) {
+    if (inPogress) {
       text = 'Transplanting...';
     }
 
@@ -147,6 +201,10 @@ var TransplantApp = React.createClass({
   },
 
   renderResetButton() {
+    if (this.state.revsets.length < 1) {
+      return;
+    }
+
     return (
       <button type="button"
         onClick={this.handleReset}
@@ -155,18 +213,82 @@ var TransplantApp = React.createClass({
   },
 
   renderResult() {
-    var result = this.state.result;
-    if (!result) {
+    var result = this.state.transplantResult;
+    if (!result || !result.success) {
       return;
     }
 
-    var classes = ['alert', 'pull-left'];
-    classes.push('alert-' + result.alert);
-
     return (
-      <div className={classes.join(' ')} role="alert">{result.message}</div>
+      <div className="alert alert-success pull-left" role="alert">{result.message}</div>
     );
   },
+
+  renderError() {
+    var result = this.state.transplantResult;
+    if (!result || !result.error) {
+      return;
+    }
+
+    var details = result.error.details
+      ? <div className="panel-body"><pre>{result.error.details}</pre></div>
+      : null;
+
+    return (
+      <div className="panel panel-danger">
+        <div className="panel-heading">{result.error.message}</div>
+        {details}
+      </div>
+    );
+  },
+
+  render() {
+    var result = this.renderResult();
+    var button = this.renderButton();
+    var error = this.renderError();
+
+    var resultRow = null;
+    if (result || button) {
+      resultRow = <div className="row">
+          <div className="form-group clearfix">
+            {result}
+            {button}
+          </div>
+        </div>;
+    }
+
+    var errroRow = null;
+    if (error) {
+      errroRow = <div className="row">{error}</div>;
+    }
+
+    return (
+      <div>
+        <div className="row">
+          <h1>Transplant</h1>
+        </div>
+        <div className="row">
+          <TransplantForm
+            repositories={this.props.repositories}
+            sourceRepository={this.state.sourceRepository}
+            targetRepository={this.state.targetRepository}
+            onChangeSourceRepository={this.handleChangeSourceRepository}
+            onChangeTargetRepository={this.handleChangeTargetRepository}
+            revsets={this.state.revsets}
+            onAddRevset={this.handleAddRevset} />
+        </div>
+        <div className="row">
+          <TransplantRevsets
+            revsets={this.state.revsets}
+            onChangeSquash={this.handleChangeSquash}
+            onChangeCommit={this.handleChangeCommit}
+            onChangeSquashedMessage={this.handleChangeSquashedMessage}
+            onDelete={this.handleDeleteRevset} />
+        </div>
+        {resultRow}
+        {errroRow}
+      </div>
+    );
+  }
 });
 
 module.exports = TransplantApp;

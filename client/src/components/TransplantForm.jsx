@@ -12,27 +12,32 @@ var RepositoriesListField = require('./RepositoriesListField.jsx'),
     Alerts = require('./Alerts.jsx');
 
 var TransplantForm = React.createClass({
+  propTypes: {
+    repositories: React.PropTypes.arrayOf(
+      React.PropTypes.shape({
+        name: React.PropTypes.string.isRequired
+      })
+    ),
+    sourceRepository: React.PropTypes.string.isRequired,
+    targetRepository: React.PropTypes.string.isRequired,
+    revsets: React.PropTypes.arrayOf(
+      React.PropTypes.shape({
+        revset: React.PropTypes.string.isRequired
+      })
+    ),
+    onChangeSourceRepository: React.PropTypes.func.isRequired,
+    onChangeTargetRepository: React.PropTypes.func.isRequired
+  },
+
   getInitialState() {
     return {
-      sourceRepository: null,
-      targetRepository: null,
-      addInProgress: false,
-      alerts: {}
+      inProgress: false,
+      alerts: []
     };
   },
 
-  handleChangeSourceRepository(sourceRepository) {
-    //console.log('handleChangeSourceRepository:', sourceRepository);
-    this.setState({sourceRepository: sourceRepository});
-  },
-
-  handleChangeTargetRepository(targetRepository) {
-    //console.log('handleChangeTargetRepository:', targetRepository);
-    this.setState({targetRepository: targetRepository});
-  },
-
   handleAddRevset(revset) {
-    var sourceRepository = this.state.sourceRepository;
+    var sourceRepository = this.props.sourceRepository;
     if (!sourceRepository || !revset) {
       return;
     }
@@ -43,13 +48,13 @@ var TransplantForm = React.createClass({
       return;
     }
 
-    this.setState({addInProgress: true});
+    this.setState({inProgress: true});
 
     return Api.lookup(sourceRepository, revset, (err, result) => {
-      this.setState({addInProgress: false});
+      this.setState({inProgress: false});
 
       if (err) {
-        this.alertAdd('danger', err.message, 'error');
+        this.alertAdd('danger', err, 'error');
         return;
       }
 
@@ -65,23 +70,22 @@ var TransplantForm = React.createClass({
   alertAdd(type, message, id) {
     id = id || this.lastAlertId++;
 
-    var alerts = this.state.alerts;
-    alerts[id] = {
+    this.state.alerts.push({
+      id: id,
       type: type,
       message: message
-    };
-    this.setState({alerts: alerts});
+    });
+    this.forceUpdate();
   },
 
   alertRemove(id) {
-    var alerts = this.state.alerts;
-    delete alerts[id];
-    this.setState({alerts: alerts});
+    this.state.alerts = _.reject(this.state.alerts, _.matches({id: id}));
+    this.forceUpdate();
   },
 
   render() {
-    var sourceRepository = this.state.sourceRepository;
-    var targetRepository = this.state.targetRepository;
+    var sourceRepository = this.props.sourceRepository;
+    var targetRepository = this.props.targetRepository;
 
     var sourceRepositories = targetRepository == ''
       ? this.props.repositories
@@ -98,22 +102,22 @@ var TransplantForm = React.createClass({
         <RepositoriesListField
           name="source"
           title="Source"
-          value={this.state.sourceRepository}
+          value={sourceRepository}
           repositories={sourceRepositories}
-          onChange={this.handleChangeSourceRepository} />
+          onChange={this.props.onChangeSourceRepository} />
         <RepositoriesListField
           name="target"
           title="Target"
-          value={this.state.targetRepository}
+          value={targetRepository}
           repositories={targetRepositories}
-          onChange={this.handleChangeTargetRepository} />
+          onChange={this.props.onChangeTargetRepository} />
         <RevsetField
           ref="revsetField"
           canAdd={canAdd}
-          addInProgress={this.state.addInProgress}
+          inProgress={this.state.inProgress}
           onAdd={this.handleAddRevset} />
         <Alerts items={this.state.alerts}
-          onAlertClose={this.alertRemove} />
+          onDismiss={this.alertRemove} />
       </form>
     );
   }

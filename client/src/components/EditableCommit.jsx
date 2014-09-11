@@ -7,6 +7,16 @@ var React = require('react');
 var UNKNOWN = '<unknown>';
 
 var EditableCommit = React.createClass({
+  propTypes: {
+    commit: React.PropTypes.shape({
+      node: React.PropTypes.string.isRequired,
+      author: React.PropTypes.string.isRequired,
+      author_email: React.PropTypes.string.isRequired,
+      date: React.PropTypes.renderable.isRequired,
+      message: React.PropTypes.renderable.isRequired
+    })
+  },
+
   handleChangeMessage(e) {
     var message = e.target.value;
     var commit = this.props.commit;
