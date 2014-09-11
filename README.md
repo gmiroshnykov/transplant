@@ -37,8 +37,8 @@ Run `python transplant_test.py`
 REST API
 -------
 
-The endpoint for performing transplants is '/transplant'. It expects a
-JSON structure to be posted with three fields:
+The endpoint for performing transplants is `/transplant`.
+It expects a JSON structure to be posted with three fields:
 
 * The `src` field is the source repository.
 * The `dst` field is the destination repository.
