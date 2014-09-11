@@ -6,7 +6,8 @@
     "url": "https://github.com/laggyluke/transplant.git"
   },
   "scripts": {
-    "bower-install": "bower install"
+    "bower-install": "bower install",
+    "gulp-build": "gulp build"
   },
   "devDependencies": {
     "bower": "^1.3.9",
