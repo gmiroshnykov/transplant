@@ -1,3 +1,6 @@
 *.pyc
+/node_modules/
 /config.py
+/client/build/
+/client/static/components/
 /data/
