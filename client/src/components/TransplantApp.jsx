@@ -86,26 +86,24 @@ var TransplantApp = React.createClass({
   handleTransplant() {
     var source = this.state.sourceRepository;
     var target = this.state.targetRepository;
+    var revsets = this.state.revsets;
 
     var items = [];
-    var revsetsToProcess = [];
-
-    var revsets = this.state.revsets;
-    for (var revset of revsets) {
+    revsets.forEach(revset => {
       if (revset.squash) {
         items.push({
           revset: revset.revset,
           message: revset.squashedMessage
         });
       } else {
-        for (var commit of revset.commits) {
+        revset.commits.forEach(commit => {
           items.push({
             commit: commit.node,
             message: commit.message
           });
-        }
+        })
       }
-    }
+    });
 
     this.setState({
       inProgressTranslant: true,
