@@ -206,7 +206,7 @@ var TransplantApp = React.createClass({
     return (
       <button type="button"
         onClick={this.handleReset}
-        className="btn btn-warning btn-lg col-md-2 pull-right">Reset</button>
+        className="btn btn-warning btn-lg col-md-2 pull-right">Reset form</button>
     )
   },
 

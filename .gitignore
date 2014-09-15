@@ -1,6 +1,6 @@
 *.pyc
 /node_modules/
-/config.py
+/server/config.py
 /client/build/
 /client/static/components/
-/data/
+/server/data/
