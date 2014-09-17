@@ -12,10 +12,11 @@ class Repository(object):
     registered_extensions = {}
 
     def __init__(self, path):
-        self._path = path
+        self.path = path
 
     @staticmethod
     def unsafe_command(cmd, **kwargs):
+        print cmd
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
         stdout, stderr = p.communicate()
         return p.returncode, stdout, stderr
@@ -55,9 +56,20 @@ class Repository(object):
         return extensions_config
 
     @classmethod
-    def clone(cls, source, destination):
+    def clone(cls, source, destination, rev=None):
         mkdirp(destination)
-        cls.command(['clone', source, destination])
+        cmd = ['clone']
+
+        if rev:
+            if not isinstance(rev, list):
+                rev = [rev]
+
+            for r in rev:
+                cmd.extend(['--rev', r])
+
+        cmd.extend([source, destination]);
+
+        cls.command(cmd)
         return Repository(destination)
 
     @classmethod
@@ -67,7 +79,7 @@ class Repository(object):
         return Repository(destination)
 
     def local_command(self, args, **kwargs):
-        return self.command(args, cwd=self._path, **kwargs)
+        return self.command(args, cwd=self.path, **kwargs)
 
     def id(self, **kwargs):
         cmd = ['id']
@@ -77,11 +89,18 @@ class Repository(object):
 
         return self.local_command(cmd).strip()
 
-    def pull(self, source=None, update=False):
+    def pull(self, source=None, update=False, rev=False):
         cmd = ['pull']
 
         if update:
             cmd.append('--update')
+
+        if rev:
+            if not isinstance(rev, list):
+                rev = [rev]
+
+            for r in rev:
+                cmd.extend(['--rev', r])
 
         if source:
             cmd.append(source)
@@ -99,6 +118,7 @@ class Repository(object):
 
     def log(self, **kwargs):
         output = self.raw_log(style='xml', **kwargs)
+
         if output == "":
             return []
 
@@ -121,16 +141,26 @@ class Repository(object):
             results.append(result)
         return results
 
-    def raw_log(self, rev, style, **kwargs):
+    def raw_log(self, rev = None, style = None, **kwargs):
         cmd = ['log']
 
         if rev:
-            cmd.extend(['--rev', rev])
+            if not isinstance(rev, list):
+                rev = [rev]
+
+            for r in rev:
+                cmd.extend(['--rev', r])
 
         if style:
             cmd.extend(['--style', style])
 
-        return self.local_command(cmd, **kwargs)
+        try:
+            return self.local_command(cmd, **kwargs)
+        except MercurialException, e:
+            if 'abort: unknown revision' in e.stderr:
+                raise UnknownRevisionException(rev, cause=e)
+            else:
+                raise e
 
     def transplant(self, revset, source=None, filter=None, **kwargs):
         cmd = ['transplant']
@@ -210,6 +240,17 @@ class MercurialException(Exception):
             "returncode: {}\n" +
             "stdout: {}\n" +
             "stderr: {}\n").format(command, self.returncode, self.stdout, self.stderr)
+
+class UnknownRevisionException(Exception):
+    def __init__(self, rev, cause=None):
+        self.rev = rev
+        self.cause = cause
+
+    def __str__(self):
+        message = "unknown revision: '{}'".format(self.rev)
+        if self.cause is not None:
+            message = message + "\ncaused by\n" + str(self.cause)
+        return message
 
 if __name__ == '__main__':
     Repository.register_extension('collapse', os.path.join('vendor', 'hgext', 'collapse.py'))

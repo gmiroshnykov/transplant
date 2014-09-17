@@ -4,7 +4,7 @@ import fnmatch
 import logging
 import json
 from flask import Flask, Response, request, redirect, jsonify, render_template, make_response
-from repository import Repository, MercurialException
+from repository import Repository, MercurialException, UnknownRevisionException
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -52,61 +52,22 @@ def get_repo_url(name):
 def get_repo_dir(name):
     return os.path.abspath(os.path.join(app.config['WORKDIR'], name))
 
-def clone_or_pull(name, refresh=False):
+def clone(name):
     repo_url = get_repo_url(name)
     repo_dir = get_repo_dir(name)
 
     if not os.path.exists(repo_dir):
         logger.info('cloning repository "%s"', name)
         repository = Repository.clone(repo_url, repo_dir)
-        set_last_pull_date(name)
     else:
+        logger.info('repository "%s" is already cloned', name)
         repository = Repository(repo_dir)
-
-        last_pull_date = get_last_pull_date(name)
-
-        if refresh or last_pull_date < time.time() - PULL_INTERVAL:
-            logger.info('pulling repository "%s"', name)
-            repository.pull(update=True)
-            set_last_pull_date(name)
 
     return repository
 
-def get_last_pull_date(name):
-    repo_dir = get_repo_dir(name)
-    last_pull_date_file = os.path.join(repo_dir, '.hg', 'last_pull_date')
-    if not os.path.exists(last_pull_date_file):
-        return 0.0
-
-    with open(last_pull_date_file, 'r') as f:
-        try:
-            timestamp = float(f.read())
-        except Exception, e:
-            logger.exception('could not read last pull date')
-            return 0.0
-
-    return timestamp
-
-def set_last_pull_date(name):
-    timestamp = time.time()
-    repo_dir = get_repo_dir(name)
-    last_pull_date_file = os.path.join(repo_dir, '.hg', 'last_pull_date')
-    with open(last_pull_date_file, 'w') as f:
-        f.write(str(timestamp))
-
-def get_commit_info(repository, commit_id):
-    try:
-        log = repository.log(rev=commit_id)
-        return log[0]
-    except MercurialException, e:
-        if 'unknown revision' in e.stderr:
-            return False
-
-def get_revsets_info(repository, revsets):
-    return map(lambda revset: get_revset_info(repository, revset), revsets)
-
-def get_revset_info(repository, revset):
-    commits = repository.log(rev=revset)
+def get_revset_info(repository_id, revset):
+    repository = clone(repository_id)
+    commits = optimistic_log(repository, revset)
     commits_count = len(commits)
     if commits_count > MAX_COMMITS:
         msg = too_many_commits_error(commits_count, MAX_COMMITS)
@@ -115,6 +76,16 @@ def get_revset_info(repository, revset):
     return {
         "commits": commits
     }
+
+def optimistic_log(repository, revset):
+    try:
+        commits = repository.log(rev=revset)
+    except UnknownRevisionException:
+        logger.info('revset "%s" not found in local repository, pulling "%s"', revset, repository.path)
+        repository.pull(rev=revset, update=True)
+        commits = repository.log(rev=revset)
+
+    return commits
 
 def cleanup(repo):
     logger.info('cleaning up')
@@ -139,8 +110,7 @@ def raw_transplant(repository, source, revset, message=None):
 
 def transplant(src, dst, items):
     try:
-        clone_or_pull(src, refresh=True)
-        dst_repo = clone_or_pull(dst, refresh=True)
+        dst_repo = clone(dst)
 
         try:
             for item in items:
@@ -184,9 +154,9 @@ def transplant_commit(src, dst, item):
 def transplant_revset(src, dst, item):
     message = item.get('message', None)
 
-    src_repo = Repository(get_repo_dir(src))
-    dst_repo = Repository(get_repo_dir(dst))
-    commits = src_repo.log(rev=item['revset'])
+    src_repo = clone(src)
+    dst_repo = clone(dst)
+    commits = optimistic_log(src_repo, item['revset'])
     commits_count = len(commits)
     if commits_count > MAX_COMMITS:
         msg = too_many_commits_error(commits_count, MAX_COMMITS)
@@ -216,12 +186,14 @@ def transplant_revset(src, dst, item):
 
 
 def _transplant(src, dst, revset, message=None):
-    dst_repo = Repository(get_repo_dir(dst))
-    src_dir = get_repo_dir(src)
+    src_repo = clone(src)
+    dst_repo = clone(dst)
+
+    # ensure the source revset is pulled from upstream
+    optimistic_log(src_repo, revset)
 
     logger.info('transplanting "%s" from "%s" to "%s"', revset, src, dst)
-
-    result = raw_transplant(dst_repo, src_dir, revset, message=message)
+    result = raw_transplant(dst_repo, src_repo.path, revset, message=message)
     dst_repo.update()
 
     logger.debug('hg transplant: %s', result)
@@ -247,9 +219,8 @@ def flask_lookup(repository_id):
     if not revset:
         return jsonify({'error': 'No revset'}), 400
 
-    repository = clone_or_pull(repository_id)
     try:
-        revset_info = get_revset_info(repository, revset)
+        revset_info = get_revset_info(repository_id, revset)
     except TooManyCommitsError, e:
         return jsonify({
             'error': e.message
