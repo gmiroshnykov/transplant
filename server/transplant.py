@@ -49,6 +49,17 @@ def get_repo_url(name):
 
     return repository['path']
 
+def get_repo_base_url(name):
+    repository = find_repo(name)
+    if repository is None:
+        return None
+
+    if 'base' in repository:
+        return repository['base']
+    else:
+        return repository['path']
+
+
 def get_repo_dir(name):
     return os.path.abspath(os.path.join(app.config['WORKDIR'], name))
 
@@ -58,7 +69,13 @@ def clone(name):
 
     if not os.path.exists(repo_dir):
         logger.info('cloning repository "%s"', name)
-        repository = Repository.clone(repo_url, repo_dir)
+        repo_base_url = get_repo_base_url(name)
+        repository = Repository.clone(repo_base_url, repo_dir)
+        repository.set_config({
+            "paths": {
+                "default": repo_url
+            }
+        })
     else:
         logger.info('repository "%s" is already cloned', name)
         repository = Repository(repo_dir)
