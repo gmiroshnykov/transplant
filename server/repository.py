@@ -226,6 +226,17 @@ class Repository(object):
 
         return self.local_command(cmd, env=env)
 
+    def set_config(self, config):
+        output = ""
+        for section, options in config.iteritems():
+            output += "[" + section + "]\n"
+            for k, v in options.iteritems():
+                output += k + " = " + v + "\n"
+
+        filename = self.path + "/.hg/hgrc"
+        with open(filename, "w") as f:
+            f.write(output)
+
 
 class MercurialException(Exception):
     def __init__(self, cmd, returncode, stdout, stderr):
