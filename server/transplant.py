@@ -66,20 +66,21 @@ def get_repo_dir(name):
 def clone(name):
     repo_url = get_repo_url(name)
     repo_dir = get_repo_dir(name)
+    repo_base_url = get_repo_base_url(name)
 
     if not os.path.exists(repo_dir):
         logger.info('cloning repository "%s"', name)
-        repo_base_url = get_repo_base_url(name)
         repository = Repository.clone(repo_base_url, repo_dir)
-        repository.set_config({
-            "paths": {
-                "default": repo_url,
-                "base": repo_base_url
-            }
-        })
     else:
         logger.info('repository "%s" is already cloned', name)
         repository = Repository(repo_dir)
+
+    repository.set_config({
+        "paths": {
+            "default": repo_url,
+            "base": repo_base_url
+        }
+    })
 
     return repository
 
