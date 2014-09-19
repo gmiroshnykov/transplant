@@ -73,7 +73,7 @@ def clone(name):
         repository = Repository.clone(repo_base_url, repo_dir)
         repository.set_config({
             "paths": {
-                "default": repo_url
+                "default": repo_url,
                 "base": repo_base_url
             }
         })
