@@ -74,6 +74,7 @@ def clone(name):
         repository.set_config({
             "paths": {
                 "default": repo_url
+                "base": repo_base_url
             }
         })
     else:
@@ -110,7 +111,7 @@ def cleanup(repo):
     repo.purge(abort_on_err=True, all=True)
 
     try:
-        repo.strip('outgoing()', no_backup=True)
+        repo.strip('outgoing(base)', no_backup=True)
     except MercurialException, e:
         if 'empty revision set' not in e.stderr:
             raise e
