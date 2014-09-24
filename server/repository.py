@@ -221,10 +221,9 @@ class Repository(object):
         if message is None:
             env['EDITOR'] = 'true'
         else:
-            message = "Squashed commits: {}".format(rev)
             cmd.extend(['--message', message])
 
-        return self.local_command(cmd, env=env)
+        return self.local_command(cmd, env=env, extensions=['collapse'])
 
     def set_config(self, config):
         output = ""

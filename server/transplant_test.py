@@ -114,6 +114,39 @@ class TransplantTestCase(unittest.TestCase):
         assert "Goodbye World!" in commit_info['message']
         assert "Hello Again!" in commit_info['message']
 
+    def test_transplant_squashed_message(self):
+        content = "Goodbye World!\n"
+        self._set_test_file_content(self.src_dir, content)
+        self.src.commit("Goodbye World!")
+        commit_id_1 = self.src.id(id=True)
+
+        content += "Hello Again!\n"
+        self._set_test_file_content(self.src_dir, content)
+        self.src.commit("Hello Again!\n")
+        commit_id_2 = self.src.id(id=True)
+
+        result = self.app.post('/transplant', data=json.dumps({
+            'src': 'test-src',
+            'dst': 'test-dst',
+            'items': [{
+                'revset': '{}::{}'.format(commit_id_1, commit_id_2),
+                'message': 'I am squashed!'
+            }]
+        }), content_type='application/json')
+
+        assert result.status_code == 200
+
+        data = json.loads(result.data)
+        assert 'tip' in data
+
+        self.dst.update()
+
+        actual_content = self._get_test_file_content(self.dst_dir)
+        assert actual_content == content
+
+        commit_info = self.dst.log(rev='tip')[0]
+        assert commit_info['message'] == 'I am squashed!'
+
     def test_change_messsage(self):
         self._set_test_file_content(self.src_dir, "Goodbye World!\n")
         self.src.commit("Goodbye World!")
