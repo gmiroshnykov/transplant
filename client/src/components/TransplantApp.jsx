@@ -23,7 +23,10 @@ var TransplantApp = React.createClass({
   },
 
   handleChangeSourceRepository(sourceRepository) {
-    this.setState({sourceRepository: sourceRepository});
+    this.setState({
+      sourceRepository: sourceRepository,
+      revsets: []
+    });
   },
 
   handleChangeTargetRepository(targetRepository) {
@@ -185,6 +188,10 @@ var TransplantApp = React.createClass({
 
     var inPogress = this.state.inProgressTranslant;
     var disabled = inPogress;
+    if (!this.state.sourceRepository || !this.state.targetRepository) {
+      disabled = true;
+    }
+
     var text = 'Transplant';
     if (inPogress) {
       text = 'Transplanting...';
