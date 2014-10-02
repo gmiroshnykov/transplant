@@ -16,7 +16,6 @@ class Repository(object):
 
     @staticmethod
     def unsafe_command(cmd, **kwargs):
-        print cmd
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, **kwargs)
         stdout, stderr = p.communicate()
         return p.returncode, stdout, stderr
