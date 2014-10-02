@@ -10,6 +10,7 @@ Requirements
 * Python 2.7 + pip
 * Mercurial
 * Properly configured SSH access to source and destination repositories
+* [Foreman](http://ddollar.github.io/foreman/) (development only)
 
 
 Installation
@@ -17,21 +18,19 @@ Installation
 
 1. Run `pip install -r requirements.txt`
 3. Run `npm install`
-2. Run `npm run bower-install`
 
 
 Usage
 -----
 
-1. Run `python transplant.py`
-2. Run `gulp`
-3. Open [http://localhost:5000](http://localhost:5000/).
+1. Run `foreman start`
+2. Open [http://localhost:5000](http://localhost:5000/).
 
 
 Testing
 -------
 
-Run `python transplant_test.py`
+Run `nosetests ./server/`
 
 
 REST API

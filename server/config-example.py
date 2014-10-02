@@ -7,7 +7,8 @@ REPOSITORIES = [
     },
     {
         "name": "transplant-dst",
-        "path": "ssh://hg@bitbucket.org/laggyluke/transplant-dst"
+        "path": "ssh://hg@bitbucket.org/laggyluke/transplant-dst",
+        "base": "ssh://hg@bitbucket.org/laggyluke/transplant-src"
     }
 ]
 
