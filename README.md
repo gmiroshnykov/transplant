@@ -47,6 +47,8 @@ try with `--rev` option.
 
 **The usual flow looks like this:**
 
+![Diagram](transplant.png)
+
 1. Receive request via HTTP API
 2. For each item to transplant
   1. If the item is a single commit:
