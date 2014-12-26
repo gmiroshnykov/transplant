@@ -25,9 +25,6 @@ class Transplant(object):
             for item in items:
                 self._transplant_item(src_repo, dst_repo, item)
 
-            logger.info('pushing "%s"', dst_repo.path)
-            dst_repo.push()
-
             tip = dst_repo.id(id=True)
             logger.info('tip: %s', tip)
             return {'tip': tip}
