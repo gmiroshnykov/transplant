@@ -17,7 +17,7 @@ class Transplant(object):
     def __init__(self):
         pass
 
-    def transplant(self, src_dir, dst_dir, commits):
+    def transplant(self, src_dir, dst_dir, items):
         src_repo = Repository(src_dir)
         dst_repo = Repository(dst_dir)
 
@@ -89,13 +89,5 @@ class Transplant(object):
         repo.update(clean=True)
         repo.purge(abort_on_err=True, all=True)
 
-        try:
-            repo.strip('outgoing()', no_backup=True)
-        except MercurialException, e:
-            if 'empty revision set' not in e.stderr:
-                raise e
-
-
 class TransplantError(Exception):
     pass
-
